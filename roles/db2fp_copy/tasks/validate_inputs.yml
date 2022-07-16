@@ -127,20 +127,6 @@
       failed_when: notvalidinst.rc > 1
       tags: prereqcheck
 
-    - command: cat /tmp/inst.final
-      register: instfinal
-      failed_when: instfinal.rc > 1
-      tags: always
-
-    - set_fact:
-        db2ilist: "{{ instfinal }}"
-      tags: always
-
-    - name: "Info - DB2 Fixpack \"DB2 {{ tgtversion }}\" will be performed on below Db2 Instance(s)"
-      debug: msg="{{ db2ilist.stdout_lines }}"
-      when: db2ilist.stdout != ''
-      tags: prereqcheck
-
     - name: "WARNING - DB2 FP Upgrade Skipping for below Instance(s) resubmit job with correct level"
       debug: msg="{{ notvalidinst.stdout_lines }}"
       when: notvalidinst.stdout != ''

@@ -20,7 +20,7 @@
                   ROLE=PRIMARY
                   HADRSTATE=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $3}' | head -1)
                   STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
-                  #STANDBYHOST=${PSTANDBY}
+                  STANDBYHOST=${PSTANDBY}
                   echo "${ROLE} ${STANDBYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
                 fi
 
@@ -30,7 +30,7 @@
                   ROLE=STANDBY
                   HADRSTATE=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $3}' | head -1)
                   PRIMARYHOST=$(nslookup ${PRIMARY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
-                  #PRIMARYHOST=${PRIMARY}
+                  PRIMARYHOST=${PRIMARY}
                   echo "${ROLE} ${PRIMARYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
                 fi
 
@@ -40,7 +40,7 @@
                   ROLE=STANDBY
                   HADRSTATE=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $3}' | head -1)
                   PRIMARYHOST=$(nslookup ${PRIMARY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
-                  #PRIMARYHOST=${PRIMARY}
+                  PRIMARYHOST=${PRIMARY}
                   echo "${ROLE} ${PRIMARYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
                 fi
 
@@ -50,7 +50,7 @@
                   ROLE=PRIMARY
                   HADRSTATE=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $3}' | head -1)
                   STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
-                  #STANDBYHOST=${PSTANDBY}
+                  STANDBYHOST=${PSTANDBY}
                   echo "${ROLE} ${STANDBYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
                 fi
 

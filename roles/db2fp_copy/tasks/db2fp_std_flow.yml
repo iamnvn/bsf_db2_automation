@@ -2,7 +2,9 @@
   - stat: path='/tmp/prepatch.complete'
     register: prepatchcomplete
   - import_tasks: prepatch.yml
-    when: not prepatchcomplete.stat.exists
+    when: 
+      - not prepatchcomplete.stat.exists
+      - installupdate == "update" or installupdate == "install_update"
   - file: path='/tmp/prepatch.complete' state='touch' mode='0777'
     tags: prepatch
 
