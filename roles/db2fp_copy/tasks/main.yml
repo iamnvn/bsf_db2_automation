@@ -60,6 +60,11 @@
         - name: "Info - DB2 Fixpack \"DB2 {{ tgtversion }}\" will be performed on below Db2 Instance(s)"
           debug: msg="{{ db2ilist.stdout_lines }}"
           when: db2ilist.stdout != ''
+
+        - name: "ERROR - None of the instances valid for this DB2 Fixpack \"DB2 {{ tgtversion }}\" upgrade"
+          fail: msg="{{ db2ilistall.stdout_lines }}"
+          when: db2ilist.stdout == ''
+          tags: prereqcheck
       
         - file: path='/tmp/prevalidate.complete' state='touch' mode='0777'
 

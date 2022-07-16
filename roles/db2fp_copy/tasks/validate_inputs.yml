@@ -131,8 +131,3 @@
       debug: msg="{{ notvalidinst.stdout_lines }}"
       when: notvalidinst.stdout != ''
       tags: prereqcheck
-
-    - name: "ERROR - None of the instances valid for this DB2 Fixpack \"DB2 {{ tgtversion }}\" upgrade"
-      fail: msg="{{ db2ilistall.stdout_lines }}"
-      when: db2ilist.stdout == ''
-      tags: prereqcheck
