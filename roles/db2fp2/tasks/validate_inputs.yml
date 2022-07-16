@@ -1,0 +1,133 @@
+---
+    - name: Initial - Cleanup
+      shell: |
+              if [[ -f /tmp/db2-role.txt ]]; then sudo rm -f /tmp/db2-role.txt; fi
+              if [[ -f /tmp/db2-standby.txt ]]; then sudo rm -f /tmp/db2-standby.txt; fi
+              if [[ -f /tmp/tsamp_chk.txt ]]; then sudo rm -f /tmp/tsamp_chk.txt; fi
+              if [[ -f /tmp/validation.txt ]]; then sudo rm -f /tmp/validation.txt; fi
+              if [[ -f /tmp/HADR_roles.txt ]]; then sudo rm -f /tmp/HADR_roles.txt; fi
+              if [[ -f /tmp/cur_db_role.txt ]]; then sudo rm -f /tmp/cur_db_role.txt; fi
+              if [[ -f /tmp/inst.final ]]; then sudo rm -f /tmp/inst.final; fi
+              if [[ -f /tmp/notvalidinst.lst ]]; then sudo rm -f /tmp/notvalidinst.lst; fi
+              if [[ -f /tmp/db2ilist.lst ]]; then sudo rm -f /tmp/db2ilist.lst; fi
+              LOGDIR="{{ logsdir }}"
+              BACKUPSDIR="{{ bkpsdir }}"
+              if [[ -f ${BACKUPSDIR}/vip_validation_final.txt ]]; then sudo rm -f ${BACKUPSDIR}/vip_validation_final.txt; fi
+              if [[ -f $LOGDIR/after_validaton.txt ]]; then sudo rm -f $LOGDIR/after_validaton.txt; fi
+              if [[ ! -d ${LOGDIR} ]]; then mkdir -m 777 -p ${LOGDIR}; fi
+              . /tmp/include_db2
+              log_roll ${MAINLOG}
+              echo "find $LOGDIR/* -name \"*.log*\" -type f -mtime +30 -exec rm -f {} \\;" | sh
+      args:
+        executable: /bin/bash
+      tags: validate,cleanup
+
+    - name: Validate db2 binaries path
+      stat: path="{{ binariesdir }}/{{ swtype }}"
+      register: binpath
+      tags: preval
+
+    - name: "ERROR - db2 binaries not exist here {{ binariesdir }}/{{ swtype }}, Please check"
+      fail: msg="Please check binaries path"
+      when: 
+        - not binpath.stat.exists 
+        - installupdate == "install" or installupdate == "install_update"
+      tags: preval
+
+    - name: Get - All db2 instances from Server
+      shell: |
+              DB2INST="{{ tgtdb2inst }}"
+              if [[ "${DB2INST}" == "all" ]]; then
+                /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read DB2LSPATH; do $DB2LSPATH/instance/db2ilist; done > /tmp/db2ilist.lst
+              else
+                for INST in $(echo ${DB2INST} | sed 's/,/ /g')
+                #for INST in ${DB2INST}
+                do
+                  echo "${INST}" >> /tmp/db2ilist.lst;
+                done
+              fi
+              chmod 777 /tmp/db2ilist.lst;
+              cat /tmp/db2ilist.lst | grep -v db2cln
+      args:
+        executable: /bin/bash
+      register: db2inlst
+      tags: always
+
+    - set_fact:
+        db2ilistall: "{{ db2inlst }}"
+      tags: always
+
+    - name: Running - db2prereqcheck -i -s -l
+      shell: |
+              {{ binariesdir }}/{{ swtype }}/db2prereqcheck -i -s -l -o {{ logsdir }}/db2prereqcheck.log
+              if [[ $? -ne 0 ]]; then
+                echo "The db2prereqcheck utility failed. Please check log {{ logsdir }}/db2prereqcheck.log"
+                exit 23
+              fi
+      when: installupdate == "install" or installupdate == "install_update"
+      tags: prereqcheck
+
+    - name: Checking - Current db2level and Requested db2level for each instance
+      shell: |
+              . $HOME/sqllib/db2profile
+              DV2VR=$(db2level | grep -i "Informational tokens" | awk '{print $5}')
+              INPUTVER="{{ tgtversion }}"
+              INST="{{ item }}"
+              if [[ "${DV2VR:0:5}" != "${INPUTVER:0:5}" ]]; then
+                echo "Instance = ${INST}, Cur_db2level = ${DV2VR}, Req_db2level = ${INPUTVER} - INVALID FOR FP UPGRADE" >> /tmp/notvalidinst.lst
+              else
+                echo "${INST}" >> /tmp/inst.final
+              fi
+              chmod -f 777 /tmp/validation.txt; chmod -f 777 /tmp/notvalidinst.lst; chmod -f 777 /tmp/inst.final
+      args:
+        executable: /bin/bash
+      register: instfinal
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilistall.stdout_lines }}"
+      failed_when: instfinal.rc > 1
+      tags: always
+
+    - block:
+        - name: "Checking - Installation Directory {{ db2vpath }}"
+          shell: |
+                  DB2VPATH="{{ db2vpath }}"
+                  FPACTION="{{ installupdate }}"
+                  if [[ "${FPACTION}" == "install" || "${FPACTION}" == "install" ]]; then
+                    if [[ $(ls -A ${DB2VPATH}) ]]; then
+                      echo "ERROR: New FP Installation Directory - ${DB2VPATH} Not Empty! Please Check" > /tmp/validation.txt
+                      chmod -f 777 /tmp/validation.txt
+                    fi
+                  elif [[ "${FPACTION}" == "update" ]]; then
+                    if [[ $(ls -A ${DB2VPATH}) ]]; then
+                      echo ""
+                    else
+                      echo "ERROR: New FP Installation Directory - ${DB2VPATH} is Empty! Please Check Installation" > /tmp/validation.txt
+                      chmod -f 777 /tmp/validation.txt
+                    fi
+                  fi
+          args:
+            executable: /bin/bash
+          register: cmdout
+          failed_when: cmdout.rc > 1
+  
+        - command: cat /tmp/validation.txt
+          register: output
+          failed_when: output.rc > 1
+
+        - name: "ERROR - NEW FP Installation Dir Check for \"{{ installupdate }}\""
+          fail: msg="{{ output.stdout_lines }}"
+          when: output.stdout != ''
+      #when: 
+      #  - installupdate == "install" or installupdate == "install_update"
+      tags: prereqcheck
+
+    - command: cat /tmp/notvalidinst.lst
+      register: notvalidinst
+      failed_when: notvalidinst.rc > 1
+      tags: prereqcheck
+
+    - name: "WARNING - DB2 FP Upgrade Skipping for below Instance(s) resubmit job with correct level"
+      debug: msg="{{ notvalidinst.stdout_lines }}"
+      when: notvalidinst.stdout != ''
+      tags: prereqcheck

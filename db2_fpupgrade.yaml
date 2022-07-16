@@ -13,4 +13,4 @@
   become_method: sudo
 
   roles:
-     - db2fp_copy
+     - db2fp2

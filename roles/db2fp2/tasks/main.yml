@@ -1,0 +1,217 @@
+---
+    - debug: msg="Play_hosts={{play_hosts}}"
+      run_once: true
+      tags: always
+
+### Start - Variables based on version ###
+    - block:
+        - include_vars: db2v11147.yml
+          when: tgtversion == "v11.1.4.7"
+
+        - include_vars: db2v1116.yml
+          when: tgtversion == "v11.1.4.6"
+
+        - include_vars: db2v1156.yml
+          when: tgtversion == "v11.5.6"
+
+        - include_vars: db2v1157.yml
+          when: tgtversion == "v11.5.7"
+
+        - include_vars: db2v10511.yml
+          when: tgtversion == "v10.5.11"
+      tags: always
+### End - Variables based on version ###
+
+### Start - Pre-Validation/Validate inputs ###
+    - block:
+        - debug: msg="Start - Pre-Validation/Validate inputs"
+          run_once: true
+
+        - stat: path='/tmp/prevalidate.complete'
+          register: prevalidatecomplete
+
+        - block:
+            - name: Remove - Any Special chars from scripts
+              local_action: shell perl -p -i -e 's/\r//g' {{ item }}
+              with_items: 
+                  - "{{ scriptstocopy }}"
+                  - "include_db2.sh"
+              become: false
+              run_once: true
+              tags: always
+
+            - name: Copy - Comman functions and variables file
+              template: src="include_db2.sh" dest="/tmp/include_db2" mode=0777
+              tags: always
+
+            - name: Check - Validate server and user input
+              import_tasks: "validate_inputs.yml"
+          when: not prevalidatecomplete.stat.exists
+
+        - command: cat /tmp/inst.final
+          register: instfinal
+          failed_when: instfinal.rc > 1
+          tags: always
+
+        - set_fact:
+            db2ilist: "{{ instfinal }}"
+          tags: always
+
+        - name: "Info - DB2 Fixpack \"DB2 {{ tgtversion }}\" will be performed on below Db2 Instance(s)"
+          debug: msg="{{ db2ilist.stdout_lines }}"
+          when: db2ilist.stdout != ''
+
+        - name: "ERROR - None of the instances valid for this DB2 Fixpack \"DB2 {{ tgtversion }}\" upgrade"
+          fail: msg="{{ db2ilistall.stdout_lines }}"
+          when: db2ilist.stdout == ''
+          tags: prereqcheck
+      
+        - file: path='/tmp/prevalidate.complete' state='touch' mode='0777'
+
+        - debug: msg="End - Pre-Validation/Validate inputs"
+          run_once: true
+      tags: prevalidate
+### End - Pre-Validation/Validate inputs ###
+
+### Start - Dir setup and copy scripts ###
+    - block:
+        - debug: msg="Start - Dir setup and copy scripts"
+          run_once: true
+
+        - stat: path='/tmp/prereq.complete'
+          register: prereqcomplete
+
+        - name: Run - Prereq Steps
+          import_tasks: "pre_reqs.yml"
+          when: not prereqcomplete.stat.exists
+
+        - file: path='/tmp/prereq.complete' state='touch' mode='0777'
+
+        - debug: msg="End - Dir setup and copy scripts"
+          run_once: true
+      tags: prereq
+### End - Dir setup and copy scripts ###
+
+### Start - Install Only ##
+    - block:
+        - debug: msg="Start - Install DB2 Fixpack only"
+          run_once: true
+
+        - import_tasks: db2fp_install_only.yml
+
+        - debug: msg="End - Install DB2 Fixpack only"
+          run_once: true
+      when: installupdate == "install"
+      tags: installonly
+### End - Install Only ##
+
+### Start - Checking Roles and Prepare Servers for FP###
+    - block:
+        - debug: msg="End - Checking Roles and Prepare Servers for FP"
+          run_once: true
+
+        - stat: path='/tmp/prepare_env.complete'
+          register: prepare_envcomplete
+        - name: Prepare - Target Environmet
+          import_tasks: "prepare_env.yml"
+          when: not prepare_envcomplete.stat.exists
+
+        - file: path='/tmp/prepare_env.complete' state='touch' mode='0777'
+
+        - command: cat /tmp/cur_db_role.txt
+          register: hadrout
+          tags: standbyfp,standalonefp,primaryfp
+
+        - set_fact:
+            hadrop: "{{ hadrout.stdout.split(' ') }}"
+          tags: standbyfp,standalonefp,primaryfp
+
+        - set_fact:
+            DBROLE: "{{ hadrop.0 }}"
+            DBSTDBYHOST: "{{ hadrop.1 }}"
+            HADRSTATE: "{{ hadrop.2 }}"
+          tags: standbyfp,standalonefp,primaryfp
+
+        - name: Info - Server Status
+          debug: msg="This Server={{ inventory_hostname }}, Databases Role={{ DBROLE }}, Remote Host={{ DBSTDBYHOST }} and HADR State={{ HADRSTATE }}"
+          tags: standbyfp,standalonefp,primaryfp
+
+        - debug: msg="End - Checking Roles and Prepare Servers for FP"
+          run_once: true
+      when: installupdate != "install" 
+      tags: prepenv  
+### End - Checking Roles and Prepare Servers for FP###
+
+### Start - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers###
+    - block:
+        - block:
+            - debug: msg="Start - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
+              run_once: true
+            - import_tasks: "db2fp_std_flow.yml"
+            - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
+              run_once: true
+          when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
+      when: installupdate != "install"
+      tags: standalonefp
+
+### Start - DB2 Fixpack upgrade Started for Principal Standby Servers###
+    - block:
+        - block:
+            - debug: msg="Start - DB2 Fixpack upgrade Started for Principal Standby Servers"
+              run_once: true
+            - import_tasks: "db2fp_std_flow.yml"
+            - import_tasks: "failover.yml"
+              tags: failover
+            - debug: msg="End - DB2 Fixpack upgrade Started for Principal Standby Servers"
+              run_once: true
+            - name: Send Signal to Primary
+              file: path='/tmp/standby.complete' state='touch' mode='0777'
+              delegate_to: "{{ DBSTDBYHOST }}"
+          when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
+      when: installupdate != "install"    
+      tags: standbyfp
+### End - DB2 Fixpack upgrade Started for Principal Standby Servers###
+
+### Start - DB2 Fixpack upgrade Started for Primary Servers###  
+    - block:
+        - stat: path="/tmp/standby.complete"
+          register: standbycomplete
+          when:  DBROLE == "PRIMARY" 
+          tags: primaryfp  
+        - block:
+              - debug: msg="Start - DB2 Fixpack upgrade Started for Primary Servers"
+                run_once: true
+              - import_tasks: "db2fp_std_flow.yml"
+              - import_tasks: "failover.yml"
+                when: failback | bool
+                tags: failover
+              - file: path="/tmp/standby.complete" state='absent'
+              - debug: msg="End - DB2 Fixpack upgrade Started for Primary Servers"
+                run_once: true
+          when: 
+            - DBROLE == "PRIMARY"
+            - standbycomplete.stat.exists
+
+        - name: Mixed DB2 Database Roles
+          debug: msg="Found MIXED DB2 Database Roles Please Make all Databases Primary/Standby/Standard"
+          when: DBROLE == "MIXED"
+
+        - import_tasks: tsamp_upgrade.yml
+          when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
+          tags: tsmpupgrade
+      when: installupdate != "install"
+      tags: primaryfp
+### End - DB2 Fixpack upgrade Started for Primary Servers###
+
+### Start - Post - Upgrade and Validation ###
+    - import_tasks: db2level_licm.yml
+      when: installupdate != "install"
+      tags: db2levelafter
+
+    - import_tasks: validate_db2.yml
+      when: installupdate != "install"
+      tags: validate
+
+    - import_tasks: cleanup.yml
+      tags: cleanup
+### End - Post - Upgrade and Validation ###

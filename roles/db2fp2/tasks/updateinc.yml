@@ -1,0 +1,18 @@
+---
+    - name: Running - iUpdate
+      shell: |
+              if [[ ! -f "{{ db2vpath }}/instance/db2iupdt" ]]; then
+                echo "{{ db2vpath }}/instance/db2iupdt File not exist please check install"
+                exit 23
+              else
+                export LD_LIBRARY_PATH=
+                touch {{ logsdir }}/{{ item }}_db2iupdate.log; chmod -f 777 {{ logsdir }}/{{ item }}_db2iupdate.log
+                {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1
+                chmod -f 777 {{ logsdir }}/{{ item }}_db2iupdate.log
+              fi
+      args:
+        executable: /bin/bash
+      register: updatecmd
+      loop: "{{ db2ilist.stdout_lines }}"
+      failed_when: updatecmd.rc > 0
+      tags: update

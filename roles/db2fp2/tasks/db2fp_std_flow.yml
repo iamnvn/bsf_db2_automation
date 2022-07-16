@@ -1,0 +1,58 @@
+---
+  - stat: path='/tmp/prepatch.complete'
+    register: prepatchcomplete
+  - import_tasks: prepatch.yml
+    when: 
+      - not prepatchcomplete.stat.exists
+      - installupdate == "update" or installupdate == "install_update"
+  - file: path='/tmp/prepatch.complete' state='touch' mode='0777'
+    tags: prepatch
+
+  - stat: path='/tmp/stopdb2.complete'
+    register: stopdb2complete
+  - import_tasks: stopdb2.yml
+    when: 
+      - installupdate == "update" or installupdate == "install_update"
+      - not stopdb2complete.stat.exists
+  - file: path='/tmp/stopdb2.complete' state='touch' mode='0777'
+    tags: stopdb2
+
+  - stat: path='/tmp/installfp.complete'
+    register: installfpcomplete
+  - import_tasks: installfp.yml
+    when: 
+      - installupdate == "install" or installupdate == "install_update"
+      - not installfpcomplete.stat.exists
+  - file: path='/tmp/installfp.complete' state='touch' mode='0777'
+    tags: install
+
+  - stat: path='/tmp/updateinc.complete'
+    register: updateinccomplete
+  - import_tasks: updateinc.yml
+    when: 
+      - installupdate == "update" or installupdate == "install_update"
+      - not updateinccomplete.stat.exists
+  - file: path='/tmp/updateinc.complete' state='touch' mode='0777'
+    tags: update
+
+  - stat: path='/tmp/startdb2.complete'
+    register: startdb2complete
+  - import_tasks: startdb2.yml
+    when: 
+      - installupdate == "update" or installupdate == "install_update"
+      - not startdb2complete.stat.exists
+  - file: path='/tmp/startdb2.complete' state='touch' mode='0777'
+    tags: startdb2
+
+  - stat: path='/tmp/postpatch.complete'
+    register: postpatchcomplete
+  - import_tasks: postpatch.yml
+    when: 
+      - installupdate == "update" or installupdate == "install_update"
+      - not postpatchcomplete.stat.exists
+  - file: path='/tmp/postpatch.complete' state='touch' mode='0777'
+    tags: postpatch
+
+  #- import_tasks: tsamp_upgrade.yml
+  #  when: installupdate == "update" or installupdate == "install_update"
+  #  tags: update
