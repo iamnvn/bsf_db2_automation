@@ -54,7 +54,7 @@
           tags: always
 
         - set_fact:
-          db2ilist: "{{ instfinal }}"
+            db2ilist: "{{ instfinal }}"
           tags: always
 
         - name: "Info - DB2 Fixpack \"DB2 {{ tgtversion }}\" will be performed on below Db2 Instance(s)"
