@@ -1,0 +1,58 @@
+---
+    - name: Copy - Failover Script to Standby node
+      copy: src="failover.sh" dest="/tmp/failover.sh" mode=0755
+      delegate_to: "{{ DBSTDBYHOST }}"
+      tags: failoverdb
+
+    - name: Copy - Comman functions and variables file
+      template: src=templates/include_db2.sh dest=/tmp/include_db2 mode=0777
+      delegate_to: "{{ DBSTDBYHOST }}"
+      tags: copyscripts
+    
+    - name: Get Standby db2 instances
+      shell: |
+              DB2INST="{{ db2inst }}"
+              if [[ "${DB2INST}" == "all" ]]; then
+                /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' | while read DBPATH; do $DBPATH/instance/db2ilist; done > /tmp/db2ilist.lst
+              else
+                echo "${DB2INST}" > /tmp/db2ilist.lst;
+              fi
+              chmod 777 /tmp/db2ilist.lst;
+              if [[ -f /tmp/db2-role.txt ]]; then sudo rm -f /tmp/db2-role.txt; fi
+              if [[ -f /tmp/db2-standby.txt ]]; then sudo rm -f /tmp/db2-standby.txt; fi
+              if [[ -f /tmp/validate_db2.sh.log ]]; then sudo rm -f /tmp/validate_db2.sh.log; fi
+              if [[ -f /tmp/db2_val_ha.sh.log ]]; then sudo rm -f /tmp/db2_val_ha.sh.log; fi
+              if [[ -f /tmp/HADR_roles.txt ]]; then sudo rm -f /tmp/HADR_roles.txt; fi
+              if [[ -f /tmp/cur_db_role.txt ]]; then sudo rm -f /tmp/cur_db_role.txt; fi
+              . /tmp/include_db2
+              log_roll ${MAINLOG}
+              cat /tmp/db2ilist.lst | grep -v db2cln
+      args:
+        executable: /bin/bash
+      register: db2ilist
+      delegate_to: "{{ DBSTDBYHOST }}"
+      tags: always
+
+    - name: Failover Databases to Standby node
+      command: "/tmp/failover.sh {{ item }}"
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      delegate_to: "{{ DBSTDBYHOST }}"
+      tags: failoverdb
+
+    - name: Remove - Failover Script from Standby node
+      file: path="/tmp/failover.sh" state=absent
+      delegate_to: "{{ DBSTDBYHOST }}"
+      tags: failoverdb
+
+    - command: "cat /tmp/vip_validation_final.txt"
+      delegate_to: "{{ DBSTDBYHOST }}"
+      register: vipout
+      failed_when: vipout.rc > 1
+      tags: failover
+
+    - name: Validate Databases and VIP after Failover
+      debug: msg="{{ vipout.stdout_lines }}"
+      when: vipout.stdout != ''
+      tags: failover

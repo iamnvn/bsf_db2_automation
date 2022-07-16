@@ -1,0 +1,48 @@
+---
+## pre-req tasks
+
+ - name: Create - Directory Structure
+   file: path="{{ item }}" state=directory owner=root group="{{ createinst['instgrp'] }}" mode=0777
+   loop: "{{ dirstocreate }}"
+   tags: createdirs
+
+ - name: Create - DB2 Related Directories.
+   file: path="{{ item }}" state=directory owner=root group="{{ createinst['instgrp'] }}" mode=0775
+   loop: "{{ db2dirs }}"
+   tags: createdirs
+
+ - name: Create - DB2 Instance Home Directory.
+   file: path="/db/home" state=directory owner="{{ createinst['instid'] }}" group="{{ createinst['instgrp'] }}" mode=0755
+   tags: createdirs
+
+ - name: Add - Instance port number to /etc/services
+   lineinfile:
+    path: /etc/services
+    line: "db2c_{{ createinst['instid'] }}    {{ createinst['instport'] }}/tcp               #DB2 Instance Communication port"
+   tags: addport
+
+ - name: Copy - Comman functions and variables file
+   template: src="templates/include_db2.sh" dest="/tmp/include_db2" mode=0777
+   tags: always
+
+ - name: Copy - DB2 Binaries
+   copy: src="{{ db2sw }}" dest="{{ binariesdir }}" mode=0755
+   #delegate_to: "{{ swsrchost }}"
+   #become: true
+   #become_user: root
+   tags: copybinaries
+
+ - name: Unzip - DB2 Binaries
+   unarchive: src="{{ binariesdir }}/{{ swtocopy }}" dest="{{ binariesdir }}" remote_src=yes
+   when: ansible_distribution != "AIX"
+   tags: copybinaries
+   
+ - name: Unzip - DB2 Binaries
+   shell: cd "{{ binariesdir }}";tar -xzvf "{{ binariesdir }}/{{ swtocopy }}"
+   when: ansible_distribution == "AIX"
+   tags: copybinaries
+
+ - name: Copy - DB2 Standard Scrips
+   copy: src="{{ item }}" dest="{{ scriptsdir }}/{{ item }}" mode=0755
+   loop: "{{ scriptstocopy }}"
+   tags: copyscripts

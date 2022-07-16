@@ -1,0 +1,28 @@
+---
+  - name: Create - Directory Structure
+    file: path="{{ item }}" state='directory' mode='0777'
+    loop: "{{ dirstocreate }}"
+    tags: createdirs
+
+  - name: Create - Instance level log directory
+    file:
+      path: "{{ logsdir }}/{{ item }}"
+      state: 'directory'
+      mode: '0777'
+    loop: "{{ db2ilist.stdout_lines }}"
+    tags: createdirs
+
+  - block:
+      - name: Copy - DB2 Binaries
+        synchronize: src="{{ swlocaldir }}/{{ db2sw }}" dest="{{ binariesdir }}" mode=push
+        delegate_to: "{{ centralhost }}"
+
+      - name: Unzip - DB2 Binaries
+        unarchive: src="{{ binariesdir }}/{{ db2sw }}" dest="{{ binariesdir }}" remote_src=yes
+    when: copybinaries | bool
+    tags: copybinaries
+
+  - name: Copy - Scrips
+    copy: src="{{ item }}" dest="{{ scriptsdir }}/{{ item }}" mode='0755'
+    loop: "{{ scriptstocopy }}"
+    tags: copyscripts

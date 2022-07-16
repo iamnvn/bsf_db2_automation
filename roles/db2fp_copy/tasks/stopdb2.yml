@@ -1,0 +1,9 @@
+---
+    - name: Running - Stop db2 
+      command: "{{ scriptsdir }}/stop_db2.sh {{ item }}"
+      register: stopdb2cmd
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      failed_when: stopdb2cmd.rc > 0
+      tags: stopdb2

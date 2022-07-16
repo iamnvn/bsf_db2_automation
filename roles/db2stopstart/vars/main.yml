@@ -1,0 +1,6 @@
+---
+# vars file for db2 restarts
+targethost: all
+tgtdir: /db/exp/ansible/stopstart
+dbaction: start     ## stop / start / restart
+db2inst: all

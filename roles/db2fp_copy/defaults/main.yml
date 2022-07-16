@@ -1,0 +1,27 @@
+---
+    pvtgtdir: "{{ tgtdir }}/{{ pversion }}"
+
+    dirstocreate:
+        - "{{ tgtdir }}"
+        - "{{ pvtgtdir }}"
+        - "{{ pvtgtdir }}/scripts"
+        - "{{ pvtgtdir }}/logs"
+        - "{{ pvtgtdir }}/backups"
+        #- "{{ pvtgtdir }}/binaries"
+
+    scriptsdir: "{{ pvtgtdir }}/scripts"
+    #binariesdir: "{{ pvtgtdir }}/binaries"
+    bkpsdir: "{{ pvtgtdir }}/backups"
+    logsdir: "{{ pvtgtdir }}/logs"    
+    
+    scriptstocopy:
+        - failover.sh
+        - start_db2.sh
+        - postpatch.sh
+        - prepatch.sh
+        - stop_db2.sh
+        - check_db_roles.sh
+
+    valscripts:
+        - db2_val.sh
+        - validateHADRTSA.sh

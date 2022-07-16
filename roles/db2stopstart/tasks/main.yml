@@ -1,0 +1,179 @@
+---
+    - debug: msg="Play_hosts={{play_hosts}}"
+      run_once: true
+      tags: always
+
+    - stat: path="/db/exp/"
+      register: logfs
+      tags: always
+
+    - set_fact:
+        tgtdir: "/tmp/db2ansible/stopstart"
+      when: logfs.stat.exists == false
+      tags: always
+
+    - set_fact:
+        dirstocreate:
+            - "{{ tgtdir }}"
+            - "{{ tgtdir }}/logs"
+            - "{{ tgtdir }}/scripts"
+        scriptsdir: "{{ tgtdir }}/scripts"
+        logsdir: "{{ tgtdir }}/logs"
+      tags: always         
+
+    - name: Create - Directory Structure
+      file: path="{{ item }}" state='directory' mode='0777'
+      loop: "{{ dirstocreate }}"
+      tags: createdirs
+
+    - name: Remove special chars before copy
+      shell: |
+              perl -p -i -e 's/\r//g' {{ item }}
+      with_items: 
+          - include_db2.sh
+          - "{{ scriptstocopy }}"
+          - "{{ valscripts }}"
+      become: false
+      delegate_to: localhost
+      tags: always
+      
+    - name: Copy - Comman functions and variables file
+      template: 
+          src: "include_db2.sh"
+          dest: "/tmp/include_db2"
+          mode: '0777'
+      tags: always
+
+    - name: Initial - cleanup
+      shell: |
+              if [[ -f /tmp/db2-roles.txt ]]; then sudo rm -f /tmp/db2-roles.txt; fi
+              if [[ -f /tmp/db2-standby.txt ]]; then sudo rm -f /tmp/db2-standby.txt; fi
+              if [[ -f /tmp/validate_db2.sh.log ]]; then sudo rm -f /tmp/validate_db2.sh.log; fi
+              if [[ -f /tmp/db2_val_ha.sh.log ]]; then sudo rm -f /tmp/db2_val_ha.sh.log; fi
+              if [[ -f /tmp/HADR_roles.txt ]]; then sudo rm -f /tmp/HADR_roles.txt; fi
+              if [[ -f /tmp/cur_db_role.txt ]]; then sudo rm -f /tmp/cur_db_role.txt; fi
+              if [[ -f /tmp/db2-role.txt ]]; then sudo rm -f /tmp/db2-role.txt; fi
+              if [[ -f /tmp/db2ilist.lst ]]; then sudo rm -f /tmp/db2ilist.lst; fi
+              LOGDIR="{{ logsdir }}"
+              find $LOGDIR/* -name \"*.log*\" -type f -mtime +30 -exec rm -f {} \\;
+              . /tmp/include_db2
+              log_roll ${MAINLOG}
+      args:
+        executable: /bin/bash
+      tags: always
+
+    - name: Copy - Scrips to target node
+      copy: src="{{ item }}" dest="{{ scriptsdir }}/{{ item }}" mode=0755
+      loop: "{{ scriptstocopy }}"
+      tags: copyscripts
+      when: dbaction != "status"
+
+    - name: Get db2 instances
+      shell: |
+              DB2INST="{{ db2inst }}"
+              if [[ "$DB2INST" == "all" ]]; then
+                /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
+              else
+                for INST in ${DB2INST}
+                do
+                  echo "${INST}" >> /tmp/db2ilist.lst;
+                done
+              fi
+              chmod -f 777 /tmp/db2ilist.lst
+              cat /tmp/db2ilist.lst | grep -v db2cln
+      args:
+        executable: /bin/bash
+      register: instfinal
+      #when: dbaction != "status"
+      tags: always
+
+    - set_fact:
+        db2ilist: "{{ instfinal }}"
+      tags: always
+
+    - name: "Info - Action=\"{{ dbaction }}\" will be performed on following Db2 Instance(s)"
+      debug: msg="{{ db2ilist.stdout_lines }}"
+      #when: dbaction != "status"
+      tags: listinst,info
+    
+    - name: Run - Check Current db2 database Roles
+      command: "{{ scriptsdir }}/check_db_roles.sh {{ item }}"
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      when: dbaction == "stop"
+      tags: checkroles
+
+    - name: Get - HADR Roles
+      shell: |
+              if [[ $(cat /tmp/db2-roles.txt | grep -i primary | wc -l) -gt 0 ]]; then
+                PSTANDBY=$(cat /tmp/db2-roles.txt | grep -i primary | head -1 | awk '{print $5}')
+                ROLE=$(cat /tmp/db2-roles.txt |  grep -i primary | head -1 | awk '{print $2}')
+                STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                #STANDBYHOST=${PSTANDBY}
+
+                echo "${ROLE} ${STANDBYHOST}" > /tmp/cur_db_role.txt
+                #echo "PRIMARY ftwlxtstt004.iss.bnr.com" > /tmp/cur_db_role.txt
+              else
+                echo "NOTPRIMARY NA" > /tmp/cur_db_role.txt
+                #echo "PRIMARY {{ inventory_hostname }}" > /tmp/cur_db_role.txt
+              fi                
+              cat /tmp/cur_db_role.txt
+      args:
+        executable: /bin/bash
+      register: hadrout
+      tags: validateha
+      when: dbaction == "stop"
+
+    #- debug: msg="{{ hadrout.stdout }}"
+    
+    - set_fact:
+       hadrop: "{{ hadrout.stdout.split(' ') }}"
+      tags: validateha
+      when: dbaction == "stop"
+
+    - set_fact:
+        DBROLE: "{{ hadrop.0 }}"
+        DBSTDBYHOST: "{{ hadrop.1 }}"
+      tags: validateha
+      when: dbaction == "stop"
+
+    - name: Info - Server Status
+      debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }} - DBRole={{ DBROLE }} RemoteHost={{ DBSTDBYHOST }}"
+      tags: info
+      when: dbaction == "stop"
+
+    - name: Info - Server Status
+      debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }}"
+      tags: info
+      when: dbaction == "start"
+
+    - import_tasks: start_db2.yml
+      when: dbaction == "start"
+      tags: startdb
+
+    - name: Block for stop DB2 Database and Instances.
+      block:
+        - import_tasks: failover_db2.yml
+          when: DBROLE == "PRIMARY"
+          tags: failover
+
+        - name: Stop - DB2 Databases and Instance
+          import_tasks: stop_db2.yml
+
+      when: dbaction == "stop"
+      tags: stopdb
+
+    - import_tasks: validate_db2.yml
+      tags: validate
+
+    - name: Remove - Scripts from Target directory
+      file: path="{{ scriptsdir }}/{{ item }}" state=absent
+      loop: "{{ scriptstocopy }}"
+      when: dbaction != "status"
+      tags: cleanup      
+      
+    - file: path="{{ item }}" state=absent
+      loop: ['/tmp/include_db2']
+      when: dbaction != "status"
+      tags: cleanup

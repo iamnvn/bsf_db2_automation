@@ -1,0 +1,38 @@
+---
+# vars file for db2_build
+target_server: all
+tgtdir: /db/db2_build
+swsrchost: 192.168.1.103
+swlocaldir: /root/projects
+swtocopy: v11.1.4fp5_linuxx64_server_t.tar.gz
+swtype: server_t
+db2vpath: /opt/IBM/db2/11.1
+installtsamp: no
+licfile: db2ese.lic
+
+## Crate instance vars.
+createinst:
+  create: yes
+  instid: db2bbi2
+  fencid: db2udf
+  instgrp: dba
+  instport: 50730
+
+## Crate database related vars.
+createdb:
+  create: yes
+  name: TESTDB
+  datadir: /db/data
+  dbdir: /db/dbdir
+
+db2dirs:
+    - /db/home
+    - /db/db2dump
+    - /db/admin
+    - /db/activelog
+    - /db/archivelog
+    - /db/overflowlog
+    - /db/messagelog
+    - /db/exp
+    - /db/dbdir
+    - /db/data

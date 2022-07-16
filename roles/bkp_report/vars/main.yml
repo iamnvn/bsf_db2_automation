@@ -1,0 +1,11 @@
+---
+scripttorun: db2_backup_report.sh
+target_server: all
+logsdir: /db/exp/ansible/bkp_reports
+dbname: all
+reportdays: 10
+mailto: nvnckmr@gmail.com
+tgtenv: purescale
+reportsserver: localhost
+#reportsserver: localhost
+reportsdir: /tmp/bkp_reports

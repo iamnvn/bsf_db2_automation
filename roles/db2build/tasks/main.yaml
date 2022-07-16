@@ -1,0 +1,67 @@
+    - debug: msg="Play_hosts={{play_hosts}}"
+      run_once: true
+      tags: always
+
+    - name: Run - Prereq Steps
+      import_tasks: pre_reqs.yaml
+      tags: prereq
+
+    - set_fact:
+         inst: "{{ createinst['instid'] }}"
+         fenc: "{{ createinst['fencid'] }}"
+      tags: always
+
+    - debug: msg="{{ inst }}"
+      tags: always
+
+    - name: Run - DB2 Install
+      shell: "{{ binariesdir }}/{{ swtype }}/db2_install -b {{ db2vpath }} -p SERVER -l {{ logdir }}/install_db2.log -n -y >> {{ logdir }}/install_STDERR.log 2>&1"
+      when: installtsamp | bool
+      tags: install
+
+    - name: Run - DB2 Install (NOTSAMP)
+      shell: "{{ binariesdir }}/{{ swtype }}/db2_install -b {{ db2vpath }} -f NOTSAMP -p SERVER -l {{ logdir }}/install_db2.log -n -y >> {{ logdir }}/install_STDERR.log 2>&1"
+      tags: install
+
+    - name: Create - DB2 Instance
+      shell: "{{ db2vpath }}/instance/db2icrt -u {{ fenc }} {{ inst }} > {{ logdir }}/{{ inst }}_db2icrt.log 2>&1"
+      when: createinst['create'] | bool
+      tags: createinst 
+
+    - name: Block to Run as Instace user
+      block:
+        - name: Configure - DB2 Instance
+          #script: "create_inst.sh {{ fenc }} {{ inst }}"
+          shell: |
+                 if [[ -f /db/home/sqllib/db2profile ]]; then . /db/home/sqllib/db2profile; fi
+                 db2set DB2AUTH=OSAUTHDB
+                 db2set DB2COMM=SSL,TCPIP
+                 db2 -v "update dbm cfg using SVCENAME db2c_{{ inst }}"
+                 db2stop force;db2start
+                 #tar -xvf /engnfs/igs/dba/DB2/server_config_files.tar
+                 #mkdir -m 3777 /db/messagelog/{{ inst }}
+                 #bin/create_gdg.sh
+                 #cat dbmcfg.cmd | sed '+s+<instance>+{{ inst }}+g' > /tmp/{{ inst }}_dbmcfg.cmd
+                 #db2 -svtf dbmcfg.cmd > dbmcfg.out
+                 #db2set DB2COMM=SSL,TCPIP
+                 #./registry.cmd
+                 #startup/db2.clean
+                 #startup/rc.db2
+          when: createinst['create'] | bool
+          tags: createinst
+
+        - name: Create - db2 database
+          script: "create_db.sh {{ createdb['name'] }} {{ createdb['datadir'] }} {{ createdb['dbdir'] }} {{ inst }}"
+          when: createdb['create'] | bool
+          tags: createdb
+
+        - name: Apply - db2 license
+          shell: "/db/home/sqllib/adm/db2licm -a {{ scriptsdir }}/{{ licfile }}"
+          when: licfile is defined
+          tags: lic
+      become: true
+      become_user: "{{ inst }}"
+
+      rescue:
+        - name: ERROR
+          debug: "{{ inst }} Commands failed. Please Check"

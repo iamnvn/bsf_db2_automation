@@ -1,0 +1,10 @@
+---
+    - name: Remove - Scripts from Target
+      file: path="{{ scriptsdir }}/{{ item }}" state=absent
+      loop: "{{ scriptstocopy }}"
+      tags: cleanup      
+      
+    - name: Remove - temp files
+      command: "rm -f /tmp/include_db2 /tmp/tsamp_chk.txt /tmp/*.complete"
+      ignore_errors: true
+      tags: cleanup

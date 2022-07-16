@@ -1,0 +1,5 @@
+---
+db2vpath: /opt/IBM/db2/v11.5FP6
+db2sw: special_13320_v11.5.6_linuxx64_universal_fixpack.tar
+swtype: universal
+binariesdir: /igs_swdepot/igs/MidrangeDBAServices/DB2/V11.5_Linux/SpecialBuild_requested_upgrades/db2_11.5.6_SB

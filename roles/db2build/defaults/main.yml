@@ -1,0 +1,24 @@
+---
+#######################################################
+##  Do not change below values until really needed   ##
+#######################################################
+
+dirstocreate:
+    - "{{ tgtdir }}"
+    - "{{ tgtdir }}/scripts"
+    - "{{ tgtdir }}/logs"
+    - "{{ tgtdir }}/binaries"
+
+scriptsdir: "{{ tgtdir }}/scripts"
+binariesdir: "{{ tgtdir }}/binaries"
+logdir: "{{ tgtdir }}/logs"
+#db2sw: "{{ swlocaldir }}/{{ swtocopy }}"
+db2sw: /db2binaries/v11.1.4fp6_linuxx64_client.tar.gz
+scriptstocopy:
+    - stop_db2.sh
+    - create_tsamp.sh
+    - create_inst.sh
+    - create_db.sh
+    - install_db2.sh
+    - start_db2.sh
+    - "{{ licfile }}"

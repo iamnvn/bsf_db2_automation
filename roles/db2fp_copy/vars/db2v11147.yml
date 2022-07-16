@@ -1,0 +1,5 @@
+---
+db2vpath: /opt/IBM/db2/V11.1/M4FP7
+db2sw: v11.1.4fp7_linuxx64_universal_fixpack.tar
+swtype: universal
+binariesdir: /igs_swdepot/igs/MidrangeDBAServices/DB2/V11.5_Linux/SpecialBuild_requested_upgrades/db2_11.1.4.7
