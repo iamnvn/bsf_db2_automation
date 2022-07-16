@@ -144,74 +144,74 @@
 
 ### Start - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers###
     - block:
-        - debug: msg="Start - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
-          run_once: true
-        - import_tasks: "db2fp_std_flow.yml"
-        - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
-          run_once: true
-      when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
+        - block:
+            - debug: msg="Start - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
+              run_once: true
+            - import_tasks: "db2fp_std_flow.yml"
+            - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
+              run_once: true
+          when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
+      when: installupdate != "install"
       tags: standalonefp
 
 ### Start - DB2 Fixpack upgrade Started for Principal Standby Servers###
     - block:
-        - debug: msg="Start - DB2 Fixpack upgrade Started for Principal Standby Servers"
-          run_once: true
-        - import_tasks: "db2fp_std_flow.yml"
-        - import_tasks: "failover.yml"
-          when: installupdate == "update" or installupdate == "install_update"
-          tags: failover
-        - debug: msg="End - DB2 Fixpack upgrade Started for Principal Standby Servers"
-          run_once: true
-        - name: Send Signal to Primary
-          file: path='/tmp/standby.complete' state='touch' mode='0777'
-          delegate_to: "{{ DBSTDBYHOST }}"
-      when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
+        - block:
+            - debug: msg="Start - DB2 Fixpack upgrade Started for Principal Standby Servers"
+              run_once: true
+            - import_tasks: "db2fp_std_flow.yml"
+            - import_tasks: "failover.yml"
+              tags: failover
+            - debug: msg="End - DB2 Fixpack upgrade Started for Principal Standby Servers"
+              run_once: true
+            - name: Send Signal to Primary
+              file: path='/tmp/standby.complete' state='touch' mode='0777'
+              delegate_to: "{{ DBSTDBYHOST }}"
+          when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
+      when: installupdate != "install"    
       tags: standbyfp
 ### End - DB2 Fixpack upgrade Started for Principal Standby Servers###
 
-### Start - DB2 Fixpack upgrade Started for Primary Servers###
-    - stat: path="/tmp/standby.complete"
-      register: standbycomplete
-      when:  DBROLE == "PRIMARY" 
-      tags: primaryfp     
-
+### Start - DB2 Fixpack upgrade Started for Primary Servers###  
     - block:
-          - debug: msg="Start - DB2 Fixpack upgrade Started for Primary Servers"
-            run_once: true
-          - import_tasks: "db2fp_std_flow.yml"
-          - import_tasks: "failover.yml"
-            when: 
-              - installupdate == "update" or installupdate == "install_update"
-              - failback | bool
-            tags: failover
-          - file: path="/tmp/standby.complete" state='absent'
-          - debug: msg="End - DB2 Fixpack upgrade Started for Primary Servers"
-            run_once: true
-      when: 
-        - DBROLE == "PRIMARY"
-        - standbycomplete.stat.exists
+        - stat: path="/tmp/standby.complete"
+          register: standbycomplete
+          when:  DBROLE == "PRIMARY" 
+          tags: primaryfp  
+        - block:
+              - debug: msg="Start - DB2 Fixpack upgrade Started for Primary Servers"
+                run_once: true
+              - import_tasks: "db2fp_std_flow.yml"
+              - import_tasks: "failover.yml"
+                when: failback | bool
+                tags: failover
+              - file: path="/tmp/standby.complete" state='absent'
+              - debug: msg="End - DB2 Fixpack upgrade Started for Primary Servers"
+                run_once: true
+          when: 
+            - DBROLE == "PRIMARY"
+            - standbycomplete.stat.exists
+
+        - name: Mixed DB2 Database Roles
+          debug: msg="Found MIXED DB2 Database Roles Please Make all Databases Primary/Standby/Standard"
+          when: DBROLE == "MIXED"
+
+        - import_tasks: tsamp_upgrade.yml
+          when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
+          tags: tsmpupgrade
+      when: installupdate != "install"
       tags: primaryfp
 ### End - DB2 Fixpack upgrade Started for Primary Servers###
 
-    - name: Mixed DB2 Database Roles
-      debug: msg="Found MIXED DB2 Database Roles Please Make all Databases Primary/Standby/Standard"
-      when: 
-        - DBROLE == "MIXED"
-        - installupdate != "install"
-
-    - import_tasks: tsamp_upgrade.yml
-      when: 
-        - DBROLE == "PRIMARY" or DBROLE == "STANDBY"
-        - installupdate == "update" or installupdate == "install_update"
-      tags: tsmpupgrade
-
+### Start - Post - Upgrade and Validation ###
     - import_tasks: db2level_licm.yml
       when: installupdate != "install"
       tags: db2levelafter
 
     - import_tasks: validate_db2.yml
-      when: installupdate == "update" or installupdate == "install_update"
+      when: installupdate != "install"
       tags: validate
 
     - import_tasks: cleanup.yml
       tags: cleanup
+### End - Post - Upgrade and Validation ###
