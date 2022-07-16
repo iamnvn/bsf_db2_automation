@@ -1,0 +1,24 @@
+---
+# ================= main script file ===========================================
+#                                                                              #
+# Playbook : run_script.yaml                                                   #
+# Description: This playbook will run .sql/.sh/.ksh script in target node.     #
+# Arguments: -i inventory file                                                 #
+# Date: Apr 01, 2022                                                           #
+# Written by: Naveen Chintada                                                  #
+#===============================================================================
+- name: Run script in target node - {{ targethost }}
+  hosts: "{{ targethost | default('empty_group') }}"
+  gather_facts: no
+  become: true
+  become_method: sudo
+  #become_user: "{{ ansible_user }}"
+
+  roles:
+    - role: runscript
+      vars:
+        scripttorun: test.sh
+        targethost: all
+        db2inst: all
+        arg1: "{{ '' | default('') }}"
+        arg2: "{{ '' | default('') }}"

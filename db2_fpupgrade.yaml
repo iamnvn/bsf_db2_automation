@@ -1,0 +1,16 @@
+---
+# ================= main script file ===========================================
+#                                                                              #
+# Playbook : db2_fpupgrade.yaml                                                #
+# Description: This playbook will update db2 to latest patch.                  #
+# Arguments: -i inventory file                                                 #
+# Written by: Jay Thangavelu                                                   #
+#===============================================================================
+- name: DB2 Fixpack upgrade on host group - {{ target_server }}
+  hosts: "{{ target_server | default('empty_group') }}"
+  gather_facts: no
+  become: true
+  become_method: sudo
+
+  roles:
+     - db2fp

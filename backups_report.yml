@@ -1,0 +1,15 @@
+---
+# ================= main script file ===========================================
+#                                                                               #
+# Playbook : backups_report.yaml                                                #
+# Description: This playbook gather backup information from db2 luw databases.  #
+# Written by: Jay Thangavelu                                                    #
+#===============================================================================
+- name: DB2 Backup reports on - {{ target_server }}
+  hosts: "{{ target_server | default('empty_group') }}"
+  gather_facts: no
+  become: true
+  become_method: sudo
+
+  roles:
+     - bkp_report

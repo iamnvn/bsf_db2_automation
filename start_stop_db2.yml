@@ -1,0 +1,22 @@
+---
+# ================= Main Script File ===========================================
+#                                                                              #
+# Playbook : start_stop_db2.yaml                                               #
+# Description: This playbook will update db2 to latest patch.                  #
+# Arguments: -i inventory file -e action=stop/start                            #
+# Date: Feb 14, 2022                                                           #
+# Written by: Jaiganesh Thangavelu                                             #
+#===============================================================================
+- name: DB2 restarts on host or group
+  #hosts: "{{ targethost | default('empty_group') }}"
+  hosts: "{{ targethost | mandatory }}"
+  gather_facts: no
+  become: true
+  become_method: sudo
+  #become_user: "{{ ansible_user }}"
+    
+  roles:
+    - role: db2stopstart
+      vars:
+        dbaction: start
+        targethost: all
