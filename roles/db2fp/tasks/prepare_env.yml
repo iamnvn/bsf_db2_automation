@@ -1,0 +1,93 @@
+---
+    - name: Run - Check Current db2 database Roles
+      command: "{{ scriptsdir }}/check_db_roles.sh {{ item }}"
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: standbyfp,standalonefp,primaryfp 
+
+    - name: Get - Current Server Role
+      shell: |
+              NOOFDBS=$(grep -c '' /tmp/db2-role.txt)
+              if [[ ${NOOFDBS} -eq $(grep -c 'STANDARD' /tmp/db2-role.txt) ]]; then
+                if [[ $(grep -c 'STANDARD' /tmp/db2-role.txt) -ne 0 ]]; then
+                  echo "STANDARD NA NA" > /tmp/cur_db_role.txt
+                fi
+
+              elif [[ ${NOOFDBS} -eq $(grep -c 'PRIMARY' /tmp/db2-role.txt) ]]; then
+                if [[ $(grep -c 'PRIMARY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  PSTANDBY=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $5}' | head -1)
+                  ROLE=PRIMARY
+                  HADRSTATE=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $3}' | head -1)
+                  STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                  #STANDBYHOST=${PSTANDBY}
+                  echo "${ROLE} ${STANDBYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
+                fi
+
+              elif [[ ${NOOFDBS} -eq $(grep -c 'STANDBY' /tmp/db2-role.txt) ]]; then
+                if [[ $(grep -c 'STANDBY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  PRIMARY=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $6}' | head -1)
+                  ROLE=STANDBY
+                  HADRSTATE=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $3}' | head -1)
+                  PRIMARYHOST=$(nslookup ${PRIMARY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                  #PRIMARYHOST=${PRIMARY}
+                  echo "${ROLE} ${PRIMARYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
+                fi
+
+              elif [[ $(grep -c 'STANDBY' /tmp/db2-role.txt) -gt 0 && $(grep -c 'PRIMARY' /tmp/db2-role.txt) -eq 0 ]]; then
+                if [[ $(grep -c 'STANDBY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  PRIMARY=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $6}' | head -1)
+                  ROLE=STANDBY
+                  HADRSTATE=$(cat /tmp/db2-role.txt | grep -i standby | awk '{print $3}' | head -1)
+                  PRIMARYHOST=$(nslookup ${PRIMARY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                  #PRIMARYHOST=${PRIMARY}
+                  echo "${ROLE} ${PRIMARYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
+                fi
+
+              elif [[ $(grep -c 'PRIMARY' /tmp/db2-role.txt) -gt 0 &&  $(grep -c 'STANDBY' /tmp/db2-role.txt) -eq 0 ]]; then
+                if [[ $(grep -c 'PRIMARY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  PSTANDBY=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $5}' | head -1)
+                  ROLE=PRIMARY
+                  HADRSTATE=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $3}' | head -1)
+                  STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                  #STANDBYHOST=${PSTANDBY}
+                  echo "${ROLE} ${STANDBYHOST} ${HADRSTATE}" > /tmp/cur_db_role.txt
+                fi
+
+              elif [[ ${NOOFDBS} -gt $(grep -c 'PRIMARY' /tmp/db2-role.txt) ]]; then
+                if [[ $(grep -c 'PRIMARY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  PSTANDBY=$(cat /tmp/db2-role.txt | grep -i primary | awk '{print $5}')
+                  ROLE=MIXED
+                  STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
+                  echo "${ROLE} ${STANDBYHOST} NA" > /tmp/cur_db_role.txt
+                fi
+                
+              elif [[ ${NOOFDBS} -gt $(grep -c 'STANDBY' /tmp/db2-role.txt) ]]; then
+                if [[ $(grep -c 'STANDBY' /tmp/db2-role.txt) -ne 0 ]]; then
+                  ROLE=MIXED
+                  STANDBYHOST=MIXED
+                  echo "${ROLE} ${STANDBYHOST} NA" > /tmp/cur_db_role.txt
+                fi
+              fi
+              #echo "STANDARD NA NA" > /tmp/cur_db_role.txt
+      args:
+        executable: /bin/bash
+      tags: standbyfp,standalonefp,primaryfp
+
+    - command: cat /tmp/cur_db_role.txt
+      register: hadrout
+      tags: standbyfp,standalonefp,primaryfp
+
+    - set_fact:
+       hadrop: "{{ hadrout.stdout.split(' ') }}"
+      tags: standbyfp,standalonefp,primaryfp
+
+    - set_fact:
+        DBROLE: "{{ hadrop.0 }}"
+        DBSTDBYHOST: "{{ hadrop.1 }}"
+        HADRSTATE: "{{ hadrop.2 }}"
+      tags: standbyfp,standalonefp,primaryfp
+
+    - name: Info - Server Status
+      debug: msg="This Server={{ inventory_hostname }}, Databases Role={{ DBROLE }}, Remote Host={{ DBSTDBYHOST }} and HADR State={{ HADRSTATE }}"
+      tags: standbyfp,standalonefp,primaryfp

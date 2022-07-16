@@ -1,0 +1,42 @@
+---
+    - name: Validate - Curret db2level and db2licm
+      shell: |
+              . $HOME/sqllib/db2profile
+              VALLOG="{{ logsdir }}/after_validaton.txt"
+              echo "==========================" >> ${VALLOG}
+              echo "Instance - {{ item }}" >> ${VALLOG}
+              echo "==========================" >> ${VALLOG}
+              echo "      db2level            " >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              db2level | tail -4 | head -3>> ${VALLOG}
+              echo "" >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              echo "      db2licm            " >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              db2licm -l >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              echo "" >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              echo "    db2pd - -alldbs       " >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              db2pd - -alldbs >> ${VALLOG}
+              echo "--------------------------" >> ${VALLOG}
+              echo "" >> ${VALLOG}
+              chmod -f 777 ${VALLOG}
+      args:
+        executable: /bin/bash
+      register: valout
+      failed_when: valout.rc > 1
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: finalvalidation
+
+    - command: "cat {{ logsdir }}/after_validaton.txt"
+      register: valout
+      tags: finalvalidation
+
+    - name: Display - Curret db2level and db2licm
+      debug: msg="{{ valout.stdout_lines }}"
+      when: valout.stdout != ''
+      tags: finalvalidation

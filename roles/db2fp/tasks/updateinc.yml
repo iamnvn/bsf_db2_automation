@@ -1,0 +1,14 @@
+---
+- name: Running - iUpdate
+  shell: |
+          export LD_LIBRARY_PATH=
+          {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1
+          chmod -f 777 {{ logsdir }}/{{ item }}_db2iupdate.log
+  args:
+    executable: /bin/bash
+  register: updatecmd
+  become: true
+  become_method: sudo
+  loop: "{{ db2ilist.stdout_lines }}"
+  failed_when: updatecmd.rc > 0
+  tags: update

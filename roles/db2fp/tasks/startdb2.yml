@@ -1,0 +1,9 @@
+---
+    - name: Running - Start db2,upgrade db and binds on Databases
+      command: "{{ scriptsdir }}/start_db2.sh {{ item }}"
+      register: startdb2cmd
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      failed_when: startdb2cmd.rc > 1
+      tags: startdb2

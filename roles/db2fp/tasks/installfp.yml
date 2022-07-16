@@ -1,0 +1,56 @@
+- name: "Installing \"DB2 {{ tgtversion }}\" Fixpack on \"{{ db2vpath }}\""
+  shell: |
+          DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
+          if [[ ${DOMAIN} -gt 0 ]]; then
+            sampolicy -s 
+            export CT_MANAGEMENT_SCOPE=2
+            chrsrc -c IBM.PeerNode CritRsrcProtMethod=5
+            DOMAINNAME=$(/usr/bin/lsrpdomain -l | grep -i Name | cut -d "=" -f2 | awk '{print $1}')
+            /usr/bin/stoprpdomain -f ${DOMAINNAME} > {{ logsdir }}/stoprpdomain.log
+            RC=$?
+            if [[ ${RC} -ne 0 ]];then
+              echo "Not able to stop domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/stoprpdomain.log
+              exit 23
+            fi
+          fi
+          ######## DB2 Installation #############
+          DB2BASEPATH=$(cat {{ bkpsdir }}/*/db2level_bef_*.out | grep 'installed'  | awk '{print $5'} | sed "s/..$//g" | sed "s/^.//g" | head -1)
+          DB2VPATH="{{ db2vpath }}"
+          if [[ -d "${DB2VPATH}" && "${DB2BASEPATH}" != "${DB2VPATH}" ]]; then rm -rf ${DB2VPATH}; fi
+          {{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
+          chmod -f 777 {{ logsdir }}/installfp_db2_{{ pversion }}.log
+          chmod -f 777 {{ logsdir }}/installfp_{{ pversion }}_STDERR.log
+          ######## DB2 Installation #############
+
+          if [[ ${DOMAIN} -gt 0 ]]; then
+            chrsrc -c IBM.PeerNode CritRsrcProtMethod=3
+            /usr/bin/startrpdomain ${DOMAINNAME} > {{ logsdir }}/startrpdomain.log
+            RC=$?
+            sleep 10
+            if [[ ${RC} -ne 0 ]];then
+              echo "Not able to start domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/startrpdomain.log
+              exit 24
+            fi
+          fi
+  args:
+        executable: /bin/bash
+  become: true
+  become_method: sudo
+  async: 3600
+  poll: 0
+  register: db2install_check
+  tags: install
+
+#- debug:
+#    msg: "{{ db2install_check.ansible_job_id }}"
+
+- name: Monitor db2 installation job
+  become: true
+  become_method: sudo
+  async_status:
+    jid: "{{ db2install_check.ansible_job_id }}"
+  register: db2install_RESULT
+  until: db2install_RESULT.finished
+  retries: 60
+  delay: 60
+  tags: install

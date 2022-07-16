@@ -1,0 +1,12 @@
+---
+    - name: Remove - Scripts from Target
+      file: path="{{ scriptsdir }}/{{ item }}" state=absent
+      loop: "{{ scriptstocopy }}"
+      tags: cleanup      
+      
+    - file: path="{{ item }}" state=absent
+      loop: ['/tmp/include_db2','/tmp/tsamp_chk.txt']
+      become: true
+      become_method: sudo
+      ignore_errors: true
+      tags: cleanup

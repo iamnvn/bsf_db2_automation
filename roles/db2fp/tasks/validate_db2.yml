@@ -1,0 +1,66 @@
+---
+    - name: Copy - Validation Scrips to target node
+      copy: src="{{ item }}" dest="{{ scriptsdir }}/{{ item }}" mode=0755
+      loop: "{{ valscripts }}"
+      tags: copyscripts
+
+    - name: "Info - DB Validation will be performed on following Db2 Instance(s)"
+      debug: msg="{{ db2ilist.stdout_lines }}"
+      tags: listinst,info
+
+    - command: date +'%Y%m%d%H%M%S'
+      register: timestamp
+      tags: always
+    
+    - set_fact:
+        curtmstmp: "{{ timestamp.stdout }}"
+      tags: always
+
+    - name: Validate DB2 Instance and Databases
+      shell: |
+             perl -p -i -e 's/\r//g' {{ scriptsdir }}/db2_val.sh
+             {{ scriptsdir }}/db2_val.sh >> {{ logsdir }}/validate_db2.sh.log_{{ curtmstmp }}
+             chmod -f 777 {{ logsdir }}/validate_db2.sh.log_{{ curtmstmp }}
+      args:
+        executable: /bin/bash
+      register: chm
+      failed_when: chm.rc > 1 
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: validatedb
+
+    - command: cat {{ logsdir }}/validate_db2.sh.log_{{ curtmstmp }}
+      register: cmdout
+      tags: output
+
+    - name: Validate HADR and TSA
+      shell: |
+              perl -p -i -e 's/\r//g' {{ scriptsdir }}/validateHADRTSA.sh
+              {{ scriptsdir }}/validateHADRTSA.sh >> {{ logsdir }}/db2_val_ha.sh.log_{{ curtmstmp }}
+              chmod -f 777 {{ logsdir }}/db2_val_ha.sh.log_{{ curtmstmp }}
+      args:
+        executable: /bin/bash
+      register: chm
+      failed_when: chm.rc > 1
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: validateha
+
+    - command: cat {{ logsdir }}/db2_val_ha.sh.log_{{ curtmstmp }}
+      register: cmdoutha
+      tags: output
+
+    - name: Remove - Validation Scripts
+      file: path="{{ scriptsdir }}/{{ item }}" state=absent
+      loop: "{{ valscripts }}"
+      tags: cleanup
+
+    - name: Display - Instance and Database Validation Output
+      debug: msg="{{ cmdout.stdout_lines }}"
+      tags: output
+
+    - name: Display - HADR TSA Validation Output
+      debug: msg="{{ cmdoutha.stdout_lines }}"
+      tags: outputha

@@ -1,0 +1,27 @@
+---
+  - import_tasks: prepatch.yml
+    tags: prepatch
+
+  - import_tasks: stopdb2.yml
+    when: installupdate == "update" or installupdate == "install_update"
+    tags: stopdb2
+
+  - import_tasks: installfp.yml
+    when: installupdate == "install" or installupdate == "install_update"
+    tags: install
+
+  - import_tasks: updateinc.yml
+    when: installupdate == "update" or installupdate == "install_update"
+    tags: update
+
+  - import_tasks: startdb2.yml
+    when: installupdate == "update" or installupdate == "install_update"
+    tags: startdb2
+
+  - import_tasks: postpatch.yml
+    when: installupdate == "update" or installupdate == "install_update"
+    tags: postpatch
+
+  #- import_tasks: tsamp_upgrade.yml
+  #  when: installupdate == "update" or installupdate == "install_update"
+  #  tags: update

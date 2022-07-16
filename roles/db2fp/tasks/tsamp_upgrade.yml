@@ -1,0 +1,54 @@
+- name: Check and Upgrade TSAMP - If required
+  shell: |
+          DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
+          if [[ ${DOMAIN} -gt 0 ]]; then
+            MIXVER=$(/usr/bin/lsrpdomain -l | grep -i MixedVer | cut -d "=" -f2 | awk '{print $1}' | tr a-z A-Z)
+            IVN=$(/usr/bin/lssrc -ls IBM.RecoveryRM | grep IVN | cut -d ":" -f2 | awk '{print $1}')
+            AVN=$(/usr/bin/lssrc -ls IBM.RecoveryRM | grep AVN | cut -d ":" -f2 | awk '{print $1}')
+          
+            if [[ ${IVN} != ${AVN} || "${MIXVER}" != "NO" ]]; then
+              export CT_MANAGEMENT_SCOPE=2 > {{ logsdir }}/tsamp_migration_{{ pversion }}.log
+              /usr/bin/runact -c IBM.PeerDomain CompleteMigration Options=0 >> {{ logsdir }}/tsamp_migration_{{ pversion }}.log
+              yes Y | /usr/bin/samctrl -m >> {{ logsdir }}/tsamp_migration_{{ pversion }}.log
+              echo "yes"
+            else
+              echo "IVN = ${IVN} , AVN = ${AVN} MixedVersions = ${MIXVER} Looks Good, No Tsamp upgrade needed"
+            fi
+          else
+            echo "No Domain found, TSAMP Migration not required"
+          fi
+  args:
+    executable: /bin/bash
+  become: true
+  become_method: sudo
+  tags: tsampmig
+
+- name: Verify if TSAMP still has Mixed Version
+  shell: |
+          DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
+          if [[ ${DOMAIN} -gt 0 ]]; then
+            MIXVER=$(/usr/bin/lsrpdomain -l | grep -i MixedVer | cut -d "=" -f2 | awk '{print $1}' | tr a-z A-Z)
+            IVN=$(/usr/bin/lssrc -ls IBM.RecoveryRM | grep IVN | cut -d ":" -f2 | awk '{print $1}')
+            AVN=$(/usr/bin/lssrc -ls IBM.RecoveryRM | grep AVN | cut -d ":" -f2 | awk '{print $1}')
+          
+            if [[ ${IVN} != ${AVN} || "${MIXVER}" != "NO" ]]; then
+              echo "Not able to upgrade tsamp please check log: {{ logsdir }}/tsamp_migration_{{ pversion }}.log" > /tmp/tsamp_chk.txt
+            else
+              echo "IVN = ${IVN} , AVN = ${AVN} MixedVersions = ${MIXVER} Looks Good" > /tmp/tsamp_chk.txt
+            fi
+          else
+            echo "No Domain found, TSAMP Migration not required" > /tmp/tsamp_chk.txt
+          fi
+          chmod -f 777 /tmp/tsamp_chk.txt
+  become: true
+  become_method: sudo
+  tags: tsampmig
+
+- command: cat /tmp/tsamp_chk.txt
+  register: cmdout
+  tags: tsampmig
+
+- name: TSAMP - Information
+  debug: msg="{{ cmdout.stdout_lines }}"
+  tags: tsampmig
+

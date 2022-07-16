@@ -1,0 +1,112 @@
+---
+    - debug: msg="Play_hosts={{play_hosts}}"
+      run_once: true
+      tags: always
+
+    - name: Remove - Any Special chars from scripts
+      local_action: shell perl -p -i -e 's/\r//g' {{ item }}
+      with_items: 
+          - "{{ scriptstocopy }}"
+          - "include_db2.sh"
+      become: false
+      run_once: true
+      tags: always
+
+    - include_vars: db2v11147.yml
+      when: tgtversion == "v11.1.4.7"
+      tags: always
+
+    - include_vars: db2v1116.yml
+      when: tgtversion == "v11.1.4.6"
+      tags: always
+
+    - include_vars: db2v1156.yml
+      when: tgtversion == "v11.5.6"
+      tags: always
+
+    - include_vars: db2v1157.yml
+      when: tgtversion == "v11.5.7"
+      tags: always
+
+    - include_vars: db2v10511.yml
+      when: tgtversion == "v10.5.11"
+      tags: always
+
+    - name: Copy - Comman functions and variables file
+      template: src="include_db2.sh" dest="/tmp/include_db2" mode=0777
+      tags: always
+
+    - name: Check - Validate server and user input
+      import_tasks: "validate_inputs.yml"
+
+    - name: Run - Prereq Steps
+      import_tasks: "pre_reqs.yml"
+      tags: prereq
+
+    - name: Prepare - Target Environmet
+      import_tasks: "prepare_env.yml"
+
+    - name: Block for DB2 StandAlone Servers Fixpack Upgrade.
+      block:
+        - debug: msg="DB2 Fixpack upgrade Started for StandAlone / AxStandby Servers"
+          run_once: true
+        - import_tasks: "db2fp_std_flow.yml"
+
+      when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
+      tags: standalonefp
+
+    - name: Block for DB2 Standby Servers Fixpack Upgrade.
+      block:
+        - debug: msg="DB2 Fixpack upgrade Started for Principal Standby Servers"
+          run_once: true
+        - import_tasks: "db2fp_std_flow.yml"
+        - import_tasks: "failover.yml"
+          when: installupdate == "update" or installupdate == "install_update"
+          tags: failover
+        - name: Send Signal to Primary
+          file: 
+            path: /tmp/standby.complete
+            state: touch 
+            mode: '0777'
+          delegate_to: "{{ DBSTDBYHOST }}"
+      when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
+      tags: standbyfp
+    
+    - stat: path="/tmp/standby.complete"
+      register: standbycomplete
+      when:  DBROLE == "PRIMARY" 
+      tags: primaryfp     
+
+    - name: Block for DB2 Primary Servers Fixpack Upgrade.
+      block:
+          - debug: msg="DB2 Fixpack upgrade Started for Primary Servers"
+            run_once: true
+          - import_tasks: "db2fp_std_flow.yml"
+          - import_tasks: "failover.yml"
+            when: 
+              - installupdate == "update" or installupdate == "install_update"
+              - failback | bool
+            tags: failover
+          - file: path="/tmp/standby.complete" state='absent'
+      when: 
+        - DBROLE == "PRIMARY"
+        - standbycomplete.stat.exists
+      tags: primaryfp
+
+    - name: Mixed DB2 Database Roles
+      debug: msg="Found MIXED DB2 Database Roles Please Make all Databases Primary/Standby/Standard"
+      when: DBROLE == "MIXED"
+
+    - import_tasks: tsamp_upgrade.yml
+      when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
+      tags: tsmpupgrade
+
+    - import_tasks: db2level_licm.yml
+      tags: db2levelafter
+
+    - import_tasks: validate_db2.yml
+      when: installupdate == "update" or installupdate == "install_update" or installupdate == "validate"
+      tags: validate
+
+    - import_tasks: cleanup.yml
+      tags: cleanup

@@ -1,0 +1,11 @@
+---
+target_server: all
+tgtdir: /db/exp/ansible/db2fp
+tgtversion: v11.1.4.6
+tgtdb2inst: 'db2inst1,db2inst2'
+pversion: JUN2022
+copybinaries: no
+swlocaldir: /igs_swdepot/igs/MidrangeDBAServices/DB2/V11.5_Linux/SpecialBuild_requested_upgrades/db2_11.5.6_SB
+centralhost: localhost
+installupdate: update   #install_update/install/update/validate
+failback: no
