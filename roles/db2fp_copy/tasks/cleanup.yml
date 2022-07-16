@@ -5,6 +5,9 @@
       tags: cleanup      
       
     - name: Remove - temp files
-      command: "rm -f /tmp/include_db2; rm -f /tmp/tsamp_chk.txt; rm -f /tmp/*.complete"
+      shell: |
+              rm -f /tmp/include_db2
+              rm -f /tmp/tsamp_chk.txt
+              rm -f /tmp/*.complete
       ignore_errors: true
       tags: cleanup
