@@ -47,8 +47,8 @@
               touch {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt; chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
               perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
               cat /tmp/db2ilist.lst | grep -v db2cln
+      when: db2inst != "root" or db2inst != "sudo" 
       register: db2ilist
-      when: db2inst != "sudo" or db2inst != "root"
       tags: always
 
     - name: Copy - Script to target node
