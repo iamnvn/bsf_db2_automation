@@ -19,6 +19,5 @@
       vars:
         scripttorun: test.sh
         targethost: all
-        db2inst: all
         arg1: "{{ '' | default('') }}"
         arg2: "{{ '' | default('') }}"
