@@ -54,6 +54,7 @@
                   perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
                   cat /tmp/db2ilist.lst | grep -v db2cln
           register: db2ilist
+          when: db2inst != "root" or db2inst != "sudo" 
 
         - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
           debug: msg="{{ db2ilist.stdout_lines }}"
