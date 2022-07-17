@@ -45,6 +45,8 @@
           when: scripttype == "sh" or scripttype == "ksh"
       when: db2inst == "sudo" or db2inst == "root"
 
+    - debug: msg="{{ db2inst }}"
+    
     - block:
         - name: Get db2 instances
           shell: |
