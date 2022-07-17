@@ -36,10 +36,10 @@
       tags: copy
 
     - import_tasks: runasinst.yml
-      when: tgtuser != "sudo1" or tgtuser != "root1"
+      when: tgtuser != "assudo" or tgtuser != "asroot"
 
     - import_tasks: runasroot.yml
-      when: tgtuser == "sudo1" or tgtuser == "root1"
+      when: tgtuser == "assudo" or tgtuser == "asroot"
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
     #  fetch: src="{{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt" dest="{{ fetchdir }}/{{ script }}_out_{{ curtmstmp }}_{{ inventory_hostname }}.txt" flat=yes
