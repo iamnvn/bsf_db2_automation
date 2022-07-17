@@ -36,10 +36,10 @@
       tags: copy
 
     - import_tasks: runasinst.yml
-      when: runas != "sudo" or runas != "root"
+      when: runas != "sudo"
 
     - import_tasks: runasroot.yml
-      when: runas == "sudo" or runas == "root"
+      when: runas == "sudo"
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
     #  fetch: src="{{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt" dest="{{ fetchdir }}/{{ script }}_out_{{ curtmstmp }}_{{ inventory_hostname }}.txt" flat=yes
