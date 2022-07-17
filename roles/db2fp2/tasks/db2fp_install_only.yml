@@ -10,7 +10,7 @@
     register: installfpcomplete
   - import_tasks: installfp.yml
     when: 
-      - installupdate == "install" or installupdate == "install_update"
+      - installupdate == "install"
       - not installfpcomplete.stat.exists
   - file: path='/tmp/installfp.complete' state='touch' mode='0777'
     tags: install
