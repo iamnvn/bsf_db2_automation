@@ -1,0 +1,61 @@
+---
+    - debug: msg="Play_hosts={{play_hosts}}"
+      run_once: true
+      tags: always
+
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+      run_once: true
+      tags: always
+    
+    - command: date +'%Y%m%d%H%M%S'
+      register: timestamp
+      tags: always
+    
+    - set_fact:
+        curtmstmp: "{{ timestamp.stdout }}"
+      tags: always
+
+    - set_fact:
+         scripttype: "{{ scripttorun.split('.')[1] }}"
+         script: "{{ scripttorun | basename }}"
+      tags: always
+
+    - name: Create - Dirs 
+      file:
+        path: "{{ logsdir }}"
+        state: directory
+        mode: '0777'
+      tags: always
+
+    - name: Copy - Script to target node
+      copy: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ script }}" mode=0755
+      ignore_errors: true
+      tags: copy
+
+    - import_tasks: runasinst.yml
+      when: runas != "root"
+
+    - import_tasks: runasroot.yml
+      when: runas == "root"
+
+    #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
+    #  fetch: src="{{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt" dest="{{ fetchdir }}/{{ script }}_out_{{ curtmstmp }}_{{ inventory_hostname }}.txt" flat=yes
+    # ignore_errors: true
+    #  tags: fetch
+
+    - name: Get - Output
+      command: "cat {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt"
+      register: cmdout
+      tags: output
+
+    - name: "Display - Output of \"{{ scripttorun }}\""
+      debug: msg="{{ cmdout.stdout_lines }}"
+      tags: output
+
+    - name: Remove - Files from target nodes
+      file: path="{{ item }}" state=absent
+      loop:
+        - "{{ logsdir }}/{{ script }}"
+        #- "/tmp/{{ script }}_out_{{ curtmstmp }}.txt"
+      tags: cleanup

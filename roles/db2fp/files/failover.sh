@@ -59,7 +59,7 @@ log "START - ${SCRIPTNAME} execution started for Instance - ${DB2INST} at $(date
     fi
 
   log "Checking tsamp status before takeover"
-  TSAMPCHK=$(lssam | egrep -i 'lock|SuspendedPropagated|Pending online|Pending Offline|manual' | wc -l)
+  TSAMPCHK=$(lssam | grep -i ${DB2INST} | egrep -i 'lock|SuspendedPropagated|Pending online|Pending Offline|manual' | wc -l)
   if [[ ${TSAMPCHK} -gt 0 ]]; then
     log "ERROR: TSAMP has some problem, Not in correct state, Please take a look"
     lssam >> ${LOGFILE}

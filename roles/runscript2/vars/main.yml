@@ -1,0 +1,8 @@
+---
+scripttorun: test.sh
+targethost: all
+fetchdir: /tmp
+arg1: "{{ '' | default('') }}"
+arg2: "{{ '' | default('') }}"
+runas: root #If you want to run as root "root" all - for all instances db2inst1,db2inst2 for multiple instances.
+logsdir: /tmp/runscript
