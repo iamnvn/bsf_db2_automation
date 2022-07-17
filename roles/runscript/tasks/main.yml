@@ -28,81 +28,74 @@
         mode: '0777'
       tags: always
 
-    - name: Get db2 instances
-      shell: |
-              if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
-              DB2INST="{{ db2inst }}"
-              if [[ "${DB2INST}" == "all" ]]; then
-                /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
-              else
-                for INST in $(echo ${DB2INST} | sed 's/,/ /g')
-                do
-                  echo "${INST}" >> /tmp/db2ilist.lst;
-                done
-              fi
-              chmod 777 /tmp/db2ilist.lst;
-              LOGDIR="{{ logsdir }}"
-              #sudo mkdir -m 777 -p ${LOGDIR}
-              echo "find $LOGDIR/* -name \"*.log*\" -type f -mtime +30 -exec rm -f {} \\;" | sh
-              touch {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt; chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-              perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
-              cat /tmp/db2ilist.lst | grep -v db2cln
-      when: db2inst != "root" or db2inst != "sudo" 
-      register: db2ilist
-      tags: always
-
     - name: Copy - Script to target node
       copy: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ script }}" mode=0755
       ignore_errors: true
       tags: copy
 
-    - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
-      debug: msg="{{ db2ilist.stdout_lines }}"
-      when: db2inst != "sudo" or db2inst != "root"
-      tags: listinst,info
+    - block:
+        - name: Get db2 instances
+          shell: |
+                  if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
+                  DB2INST="{{ db2inst }}"
+                  if [[ "${DB2INST}" == "all" ]]; then
+                    /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
+                  else
+                    for INST in $(echo ${DB2INST} | sed 's/,/ /g')
+                    do
+                      echo "${INST}" >> /tmp/db2ilist.lst;
+                    done
+                  fi
+                  chmod 777 /tmp/db2ilist.lst;
+                  LOGDIR="{{ logsdir }}"
+                  #sudo mkdir -m 777 -p ${LOGDIR}
+                  echo "find $LOGDIR/* -name \"*.log*\" -type f -mtime +30 -exec rm -f {} \\;" | sh
+                  touch {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt; chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+                  perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
+                  cat /tmp/db2ilist.lst | grep -v db2cln
+          register: db2ilist
 
-    - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes"
-      shell: |
-             #/tmp/{{ script }} {{ arg1 }} {{ arg2 }} >> /tmp/{{ script }}_out.txt
-             #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
-             {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-             chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-      register: cmdout
-      failed_when: cmdout.rc > 1
-      become: true
-      become_user: "{{ item }}"
-      loop: "{{ db2ilist.stdout_lines }}"
-      when: 
-        - scripttype == "sh" or scripttype == "ksh"
-        - db2inst != "sudo" or db2inst != "root"
-      tags: run
+        - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
+          debug: msg="{{ db2ilist.stdout_lines }}"
 
-    - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
-      shell: |
-             {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-             chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-      register: cmdout
-      failed_when: cmdout.rc > 1
-      when: 
-        - scripttype == "sh" or scripttype == "ksh"
-        - db2inst == "sudo" or db2inst == "root"
-      tags: run
+        - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes"
+          shell: |
+                  #/tmp/{{ script }} {{ arg1 }} {{ arg2 }} >> /tmp/{{ script }}_out.txt
+                  #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
+                  {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+                  chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          register: cmdout
+          failed_when: cmdout.rc > 1
+          become: true
+          become_user: "{{ item }}"
+          loop: "{{ db2ilist.stdout_lines }}"
+          when: scripttype == "sh" or scripttype == "ksh"
 
-    - name: "Run - DB2 Script - \"{{ scripttorun }}\" on target node"
-      shell: |
-             . $HOME/sqllib/db2profile
-             perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
-             db2 -tvf {{ logsdir }}/{{ script }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-             chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-      register: cmdout
-      failed_when: cmdout.rc > 1
-      become: true
-      become_user: "{{ item }}"
-      loop: "{{ db2ilist.stdout_lines }}"
-      when: 
-        - scripttype == "sql" or scripttype == "db2"
-        - db2inst != "sudo" or db2inst != "root"
-      tags: run
+        - name: "Run - DB2 Script - \"{{ scripttorun }}\" on target node"
+          shell: |
+                  . $HOME/sqllib/db2profile
+                  perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
+                  db2 -tvf {{ logsdir }}/{{ script }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+                  chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          register: cmdout
+          failed_when: cmdout.rc > 1
+          become: true
+          become_user: "{{ item }}"
+          loop: "{{ db2ilist.stdout_lines }}"
+          when: scripttype == "sql" or scripttype == "db2"
+
+      when: db2inst != "root" or db2inst != "sudo" 
+      tags: always
+
+    - block:
+        - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
+          shell: |
+                  {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+                  chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          register: cmdout
+          failed_when: cmdout.rc > 1
+          when: scripttype == "sh" or scripttype == "ksh"
+      when: db2inst == "sudo" or db2inst == "root"
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
     #  fetch: src="{{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt" dest="{{ fetchdir }}/{{ script }}_out_{{ curtmstmp }}_{{ inventory_hostname }}.txt" flat=yes
