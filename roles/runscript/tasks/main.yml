@@ -57,6 +57,7 @@
 
     - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
       debug: msg="{{ db2ilist.stdout_lines }}"
+      when: db2inst != "sudo" or db2inst != "root"
       tags: listinst,info
 
     - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes"
