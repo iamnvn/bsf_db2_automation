@@ -1,6 +1,4 @@
 ---
-    - debug: msg="{{ runas }}"
-
     - name: Get db2 instances
       shell: |
               if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi

@@ -1,6 +1,4 @@
----
-    - debug: msg="{{ runas }}"
-    
+---   
     - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
       shell: |
               {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
