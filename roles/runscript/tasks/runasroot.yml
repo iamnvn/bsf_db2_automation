@@ -1,5 +1,5 @@
 ---
-    - debug: msg="{{ tgtuser }}"
+    - debug: msg="{{ runas }}"
     
     - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
       shell: |

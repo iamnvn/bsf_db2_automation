@@ -1,8 +1,8 @@
 ---
-scripttorun: sample.sh
+scripttorun: unused_db2_deinstall.sh
 targethost: all
 fetchdir: /tmp
 arg1: "{{ '' | default('') }}"
 arg2: "{{ '' | default('') }}"
-tgtuser: sudo1 #If you want to run as root use assudo / asroot
+runas: sudo #If you want to run as root use assudo / asroot
 logsdir: /tmp/runscript

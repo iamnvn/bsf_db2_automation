@@ -1,14 +1,14 @@
 ---
-    - debug: msg="{{ tgtuser }}"
+    - debug: msg="{{ runas }}"
 
     - name: Get db2 instances
       shell: |
               if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
-              tgtuser="{{ tgtuser }}"
-              if [[ "${tgtuser}" == "all" ]]; then
+              runas="{{ runas }}"
+              if [[ "${runas}" == "all" ]]; then
                 /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
-              elif [[ "${tgtuser}" != "sudo" || "${tgtuser}" != "root" ]]; then
-                for INST in $(echo ${tgtuser} | sed 's/,/ /g')
+              elif [[ "${runas}" != "sudo" || "${runas}" != "root" ]]; then
+                for INST in $(echo ${runas} | sed 's/,/ /g')
                 do
                   echo "${INST}" >> /tmp/db2ilist.lst;
                 done
