@@ -4,5 +4,5 @@ targethost: all
 fetchdir: /tmp
 arg1: "{{ '' | default('') }}"
 arg2: "{{ '' | default('') }}"
-db2inst: all
+db2inst: sudo
 logsdir: /tmp/runscript
