@@ -30,6 +30,7 @@
 
     - name: Get db2 instances
       shell: |
+              if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
               DB2INST="{{ db2inst }}"
               if [[ "${DB2INST}" == "all" ]]; then
                 /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
