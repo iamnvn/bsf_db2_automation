@@ -54,6 +54,6 @@ log "${HNAME}:${DB2INST} preparing to start"
 	fi
 
     log "Running DB2UPDV(Upgrade db) and Binds on each Database"
-    #db2updv_binds
+    db2updv_binds
   
 log "END - ${SCRIPTNAME} execution ended for Instance - ${DB2INST} at $(date)"
