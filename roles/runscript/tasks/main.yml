@@ -40,7 +40,7 @@
                   DB2INST="{{ db2inst }}"
                   if [[ "${DB2INST}" == "all" ]]; then
                     /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
-                  else
+                  elif [[ "${DB2INST}" != "sudo" || "${DB2INST}" != "root" ]]; then
                     for INST in $(echo ${DB2INST} | sed 's/,/ /g')
                     do
                       echo "${INST}" >> /tmp/db2ilist.lst;
