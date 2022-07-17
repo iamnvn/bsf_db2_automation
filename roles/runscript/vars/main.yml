@@ -4,5 +4,5 @@ targethost: all
 fetchdir: /tmp
 arg1: "{{ '' | default('') }}"
 arg2: "{{ '' | default('') }}"
-runas: sudo #If you want to run as root use assudo / asroot
+runas: root #If you want to run as root use assudo / asroot
 logsdir: /tmp/runscript
