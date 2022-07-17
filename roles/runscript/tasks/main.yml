@@ -40,6 +40,8 @@
           shell: |
                   {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
                   chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          args:
+            executable: /bin/bash
           register: cmdout
           failed_when: cmdout.rc > 1
           when: scripttype == "sh" or scripttype == "ksh"
@@ -67,6 +69,8 @@
                   touch {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt; chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
                   perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
                   cat /tmp/db2ilist.lst | grep -v db2cln
+          args:
+            executable: /bin/bash
           register: db2ilist
 
         - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
@@ -78,6 +82,8 @@
                   #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
                   {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
                   chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          args:
+            executable: /bin/bash
           register: cmdout
           failed_when: cmdout.rc > 1
           become: true
@@ -91,6 +97,8 @@
                   perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
                   db2 -tvf {{ logsdir }}/{{ script }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
                   chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          args:
+            executable: /bin/bash
           register: cmdout
           failed_when: cmdout.rc > 1
           become: true
