@@ -3,7 +3,7 @@
       run_once: true
       tags: always
 
-    - debug: msg="{{ db2inst }}"
+    - debug: msg="{{ tgtuser }}"
 
     - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
       become: false
@@ -45,19 +45,19 @@
           register: cmdout
           failed_when: cmdout.rc > 1
           when: scripttype == "sh" or scripttype == "ksh"
-      when: db2inst != "sudo" or db2inst != "root"
+      when: tgtuser != "sudo" or tgtuser != "root"
 
-    - debug: msg="{{ db2inst }}"
+    - debug: msg="{{ tgtuser }}"
 
     - block:
         - name: Get db2 instances
           shell: |
                   if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
-                  DB2INST="{{ db2inst }}"
-                  if [[ "${DB2INST}" == "all" ]]; then
+                  tgtuser="{{ tgtuser }}"
+                  if [[ "${tgtuser}" == "all" ]]; then
                     /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
-                  elif [[ "${DB2INST}" != "sudo" || "${DB2INST}" != "root" ]]; then
-                    for INST in $(echo ${DB2INST} | sed 's/,/ /g')
+                  elif [[ "${tgtuser}" != "sudo" || "${tgtuser}" != "root" ]]; then
+                    for INST in $(echo ${tgtuser} | sed 's/,/ /g')
                     do
                       echo "${INST}" >> /tmp/db2ilist.lst;
                     done
@@ -106,7 +106,7 @@
           loop: "{{ db2ilist.stdout_lines }}"
           when: scripttype == "sql" or scripttype == "db2"
 
-      when: db2inst != "root" or db2inst != "sudo" 
+      when: tgtuser != "root" or tgtuser != "sudo" 
       tags: always
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
