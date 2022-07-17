@@ -3,6 +3,8 @@
       run_once: true
       tags: always
 
+    - debug: msg="{{ db2inst1 }}"
+
     - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
       become: false
       run_once: true
