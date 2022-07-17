@@ -68,13 +68,13 @@
              {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
              chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
       register: cmdout
-      when: 
-        - scripttype == "sh" or scripttype == "ksh"
-        - db2inst != "sudo" or db2inst != "root"
       failed_when: cmdout.rc > 1
       become: true
       become_user: "{{ item }}"
       loop: "{{ db2ilist.stdout_lines }}"
+      when: 
+        - scripttype == "sh" or scripttype == "ksh"
+        - db2inst != "sudo" or db2inst != "root"
       tags: run
 
     - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
@@ -82,10 +82,10 @@
              {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
              chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
       register: cmdout
+      failed_when: cmdout.rc > 1
       when: 
         - scripttype == "sh" or scripttype == "ksh"
         - db2inst == "sudo" or db2inst == "root"
-      failed_when: cmdout.rc > 1
       tags: run
 
     - name: "Run - DB2 Script - \"{{ scripttorun }}\" on target node"
@@ -94,14 +94,14 @@
              perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
              db2 -tvf {{ logsdir }}/{{ script }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
              chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-      register: cmdout       
-      when: 
-        - scripttype == "sql" or scripttype == "db2"
-        - db2inst != "sudo" or db2inst != "root"
+      register: cmdout
       failed_when: cmdout.rc > 1
       become: true
       become_user: "{{ item }}"
       loop: "{{ db2ilist.stdout_lines }}"
+      when: 
+        - scripttype == "sql" or scripttype == "db2"
+        - db2inst != "sudo" or db2inst != "root"
       tags: run
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
