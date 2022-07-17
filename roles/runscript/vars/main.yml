@@ -1,5 +1,5 @@
 ---
-scripttorun: unused_db2_deinstall.sh
+scripttorun: test.sh
 targethost: all
 fetchdir: /tmp
 arg1: "{{ '' | default('') }}"
