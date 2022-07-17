@@ -1,0 +1,12 @@
+---
+    - debug: msg="{{ tgtuser }}"
+    
+    - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
+      shell: |
+              {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+              chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+      args:
+        executable: /bin/bash
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      when: scripttype == "sh" or scripttype == "ksh"
