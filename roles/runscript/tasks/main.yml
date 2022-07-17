@@ -34,6 +34,16 @@
       tags: copy
 
     - block:
+        - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
+          shell: |
+                  {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+                  chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
+          register: cmdout
+          failed_when: cmdout.rc > 1
+          when: scripttype == "sh" or scripttype == "ksh"
+      when: db2inst == "sudo" or db2inst == "root"
+
+    - block:
         - name: Get db2 instances
           shell: |
                   if [[ -f /tmp/db2ilist.lst ]]; then rm -rf /tmp/db2ilist.lst; fi
@@ -54,7 +64,6 @@
                   perl -p -i -e 's/\r//g' {{ logsdir }}/{{ script }}
                   cat /tmp/db2ilist.lst | grep -v db2cln
           register: db2ilist
-          when: db2inst != "root" or db2inst != "sudo" 
 
         - name: "Info - Script \"{{ scripttorun }}\" will run with on following Db2 Instance(s)"
           debug: msg="{{ db2ilist.stdout_lines }}"
@@ -87,16 +96,6 @@
 
       when: db2inst != "root" or db2inst != "sudo" 
       tags: always
-
-    - block:
-        - name: "Run - Shell Script - \"{{ scripttorun }}\" on target nodes as sudo/root"
-          shell: |
-                  {{ logsdir }}/{{ script }} {{ arg1 }} {{ arg2 }} >> {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-                  chmod -f 777 {{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt
-          register: cmdout
-          failed_when: cmdout.rc > 1
-          when: scripttype == "sh" or scripttype == "ksh"
-      when: db2inst == "sudo" or db2inst == "root"
 
     #- name: "Fetch - Out file from target node to controller - {{ fetchdir }} dir"
     #  fetch: src="{{ logsdir }}/{{ script }}_out_{{ curtmstmp }}.txt" dest="{{ fetchdir }}/{{ script }}_out_{{ curtmstmp }}_{{ inventory_hostname }}.txt" flat=yes
