@@ -25,10 +25,12 @@
       shell: |
               LOGSDIR="{{ logsdir }}"
               TMST="{{ timestamp.stdout }}"
+              HNAME=$(hostname -s)
+              DB2INST=$(whoami)
               MAILTO="{{ mailto }}"
               FINALRPT=${LOGSDIR}/final_report_${TMST}.final
               echo "======================================================================" >> ${FINALRPT}
-              echo "         Daily Report Generated on - $(date)                          " >> ${FINALRPT}
+              echo "         ${HNAME} - Daily Report Generated on - $(date)               " >> ${FINALRPT}
               echo "======================================================================" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
               echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
@@ -61,7 +63,7 @@
               echo "-- END" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
 
-              mail -s "Purescale Backup Report - $(date)" ${MAILTO} < ${FINALRPT}
+              mail -s "Purescale Backup Report - $(hostname -s) - $(date)" ${MAILTO} < ${FINALRPT}
               cat ${FINALRPT}
       args:
         executable: /bin/bash

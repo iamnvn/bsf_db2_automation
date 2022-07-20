@@ -89,6 +89,9 @@ function cleanup {
     log_roll ${STANDBYRPT}
     log_roll ${IGNORERPT}
     log_roll ${PURESCALERPT}
+
+    echo "INST_HOSTNAME_DBNAME                     BACKUP_TYPE         START_TIME     END_TIME       STATUS  ERR_CODE    BKP_EXEC_TIME_MIN" > ${PURESCALERPT}
+    echo "----------------------------------------------------------------------------- ----------- --------------------------------------" >> ${PURESCALERPT}
 }
 
 function cleanup2 {
@@ -99,7 +102,7 @@ function cleanup2 {
 }
 
 function latest_bkp_info_sql {
-            db2 -x "SELECT CURRENT SERVER AS DBNAME,
+            db2 -x "SELECT '$(whoami)_$(hostname -s)_'||CURRENT SERVER AS DBNAME,
                 CASE(OPERATIONTYPE)
                     WHEN 'D' THEN 'DELTA_OFFLINE'
                     WHEN 'E' THEN 'DELTA_ONLINE'
@@ -184,7 +187,8 @@ function validate_bkp_report {
 
 function pre_finalreport {
     cat ${INPROGRESRPT} >> ${FINALRPT}
-    cat ${PURESCALERPT} | grep FULL >> ${FINALRPT}
+    #cat ${PURESCALERPT} | grep FULL >> ${FINALRPT}
+    cat ${PURESCALERPT} >> ${FINALRPT}
     cat ${STANDBYRPT} >> ${FINALRPT}
     cat ${ERRORSRPT} >> ${FINALRPT}
     cat ${IGNORERPT} >> ${FINALRPT}
@@ -194,39 +198,40 @@ function pre_finalreport {
 function display2 {
             FINALRPT=/tmp/final
             echo "======================================================================" >> ${FINALRPT}
-              echo "         Daily Report Generated on - $(date)                          " >> ${FINALRPT}
-              echo "======================================================================" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
-              echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
-              echo "---------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${FINALRPT}
-              echo "-- END" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
+              echo "         Daily Report Generated on - $(date)                      " >> ${FINALRPT}
+            echo "======================================================================" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
+            echo "---------------------------------------------------------------" >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${FINALRPT}
+            echo "-- END" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
 
-              echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
-              echo "---------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
-              echo "-- END" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
+            echo "---------------------------------------------------------------" >> ${FINALRPT}
+            #cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final >> ${FINALRPT}
+            echo "-- END" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
 
-              echo "-- BEGIN - Standby Report --No Action needed" >> ${FINALRPT}
-              echo "---------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup Needed" >> ${FINALRPT}
-              echo "-- END" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Standby Report --No Action needed" >> ${FINALRPT}
+            echo "---------------------------------------------------------------" >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup Needed" >> ${FINALRPT}
+            echo "-- END" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
 
-              echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${FINALRPT}
-              echo "-------------------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
-              echo "-- END" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${FINALRPT}
+            echo "-------------------------------------------------------------------------" >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
+            echo "-- END" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
 
-              echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
-              echo "---------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to be backed up" >> ${FINALRPT}
-              echo "-- END" >> ${FINALRPT}
-              echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
+            echo "---------------------------------------------------------------" >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to be backed up" >> ${FINALRPT}
+            echo "-- END" >> ${FINALRPT}
+            echo "" >> ${FINALRPT}
 
-              cat ${FINALRPT}
+            cat ${FINALRPT}
 }
 main

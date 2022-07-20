@@ -7,18 +7,18 @@
       become: false
       run_once: true
 
-    - name: Create Local logs Directory
-      shell: |
-              LOGSDIR="{{ reportsdir }}"
-              if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
-              if [[ $(ls -A ${LOGSDIR}) ]]; then
-                mkdir -m 777 -p ${LOGSDIR}/old
-                mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
-              fi
-      register: cmdout
-      failed_when: cmdout.rc > 1
-      delegate_to: "{{ reportsserver }}"
-      run_once: true
+    #- name: Create Local logs Directory
+    #  shell: |
+    #          LOGSDIR="{{ reportsdir }}"
+    #          if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
+    #          if [[ $(ls -A ${LOGSDIR}) ]]; then
+    #            mkdir -m 777 -p ${LOGSDIR}/old
+    #            mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
+    #          fi
+    #  register: cmdout
+    #  failed_when: cmdout.rc > 1
+    #  delegate_to: "{{ reportsserver }}"
+    #  run_once: true
 
     - name: Get db2 instances
       shell: |
