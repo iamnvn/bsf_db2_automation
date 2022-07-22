@@ -26,7 +26,7 @@
       template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
       tags: copy
 
-    - shell: if [[ -f "{{ logsdir }}/daily_report.final" ]]; then mv "{{ logsdir }}/daily_report.final" "{{ logsdir }}/old_daily_report.final"; fi
+    - shell: if [[ -f "{{ logsdir }}/daily_report.final" ]]; then mv -f "{{ logsdir }}/daily_report.final" "{{ logsdir }}/old_daily_report.final"; fi
 
     - name: "Run - Script - \"{{ scripttorun }}\""
       shell: |
@@ -42,7 +42,7 @@
       tags: run
 
     - name: Fetch - Report
-      synchronize: src="{{ logsdir }}/daily_report.final" dest="{{ logsdir }}/daily_report_{{ inventory_hostname }}.final" mode=pull
+      synchronize: src="{{ logsdir }}/daily_report.final" dest="{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" mode=pull
       delegate_to: "{{ reportsserver }}"
 
     #- name: Fetch report files from all servers to reporting server
@@ -60,12 +60,12 @@
     
     - set_fact:
         curtmstmp: "{{ timestamp.stdout }}"
-        finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+        finalreport: "{{ reportsdir }}/finalreport_{{ timestamp.stdout }}.txt"
 
     - name: Consolidate single report to mail
       shell: |
               FINALRPT="{{ finalreport }}"
-              LOGSDIR="{{ logsdir }}"
+              LOGSDIR="{{ reportsdir }}"
               MAILTO="{{ mailto }}"
 
               echo "======================================================================" >> ${FINALRPT}
