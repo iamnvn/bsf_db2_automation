@@ -42,7 +42,11 @@
       tags: run
 
     - name: Fetch - Report
-      synchronize: src="{{ logsdir }}/daily_report.final" dest="{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" mode=pull
+      synchronize: 
+        src: "{{ logsdir }}/daily_report.final" 
+        dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" 
+        mode: pull
+        recursive: yes
       delegate_to: "{{ reportsserver }}"
 
     #- name: Fetch report files from all servers to reporting server
