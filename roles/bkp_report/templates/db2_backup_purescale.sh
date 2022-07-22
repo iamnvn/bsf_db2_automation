@@ -15,7 +15,7 @@ function get_vars {
     DB2INST=$(whoami)
     
 
-    FINALRPT=${LOGSDIR}/daily_report_${DB2INST}.final
+    FINALRPT=${LOGSDIR}/daily_report.final
     ERRORSRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.err
     INPROGRESRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.inprgrs
     STANDBYRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.standby
@@ -195,42 +195,42 @@ function pre_finalreport {
 }
 
 function display2 {
-            FINALRPT=/tmp/final
-            echo "======================================================================" >> ${FINALRPT}
-              echo "         Daily Report Generated on - $(date)                      " >> ${FINALRPT}
-            echo "======================================================================" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
-            echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
-            echo "---------------------------------------------------------------" >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${FINALRPT}
-            echo "-- END" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
+            DISPRPT=/tmp/final
+            echo "======================================================================" >> ${DISPRPT}
+              echo "         Daily Report Generated on - $(date)                      " >> ${DISPRPT}
+            echo "======================================================================" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
+            echo "-- BEGIN - Backups In Progress" >> ${DISPRPT}
+            echo "---------------------------------------------------------------" >> ${DISPRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${DISPRPT}
+            echo "-- END" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
 
-            echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
-            echo "---------------------------------------------------------------" >> ${FINALRPT}
-            #cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final >> ${FINALRPT}
-            echo "-- END" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Purescale latest full backup information" >> ${DISPRPT}
+            echo "---------------------------------------------------------------" >> ${DISPRPT}
+            #cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${DISPRPT}
+            cat ${LOGSDIR}/daily_report_*.final >> ${DISPRPT}
+            echo "-- END" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
 
-            echo "-- BEGIN - Standby Report --No Action needed" >> ${FINALRPT}
-            echo "---------------------------------------------------------------" >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup Needed" >> ${FINALRPT}
-            echo "-- END" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Standby Report --No Action needed" >> ${DISPRPT}
+            echo "---------------------------------------------------------------" >> ${DISPRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup Needed" >> ${DISPRPT}
+            echo "-- END" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
 
-            echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${FINALRPT}
-            echo "-------------------------------------------------------------------------" >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
-            echo "-- END" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${DISPRPT}
+            echo "-------------------------------------------------------------------------" >> ${DISPRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${DISPRPT}
+            echo "-- END" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
 
-            echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
-            echo "---------------------------------------------------------------" >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to be backed up" >> ${FINALRPT}
-            echo "-- END" >> ${FINALRPT}
-            echo "" >> ${FINALRPT}
+            echo "-- BEGIN - Ingnoring Test Databases" >> ${DISPRPT}
+            echo "---------------------------------------------------------------" >> ${DISPRPT}
+            cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to be backed up" >> ${DISPRPT}
+            echo "-- END" >> ${DISPRPT}
+            echo "" >> ${DISPRPT}
 
-            cat ${FINALRPT}
+            cat ${DISPRPT}
 }
 main
