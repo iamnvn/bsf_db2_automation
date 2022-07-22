@@ -63,7 +63,7 @@
     - name: Consolidate single report to mail
       shell: |
               FINALRPT="{{ finalreport }}"
-              LOGSDIR="{{ reportsdir }}"
+              LOGSDIR="{{ logsdir }}"
               MAILTO="{{ mailto }}"
 
               echo "======================================================================" >> ${FINALRPT}
@@ -96,7 +96,7 @@
 
               echo "-- BEGIN - Error, Unable to connect or Instance not running (Take Action)" >> ${FINALRPT}
               echo "-------------------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep "ERROR:" >> ${FINALRPT}
               echo "-- END" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
 
