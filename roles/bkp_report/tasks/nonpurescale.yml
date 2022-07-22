@@ -26,6 +26,8 @@
       template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
       tags: copy
 
+    - command: if [[ -f "{{ logsdir }}/daily_report.final" ]]; then mv "{{ logsdir }}/daily_report.final" "{{ logsdir }}/old_daily_report.final"; fi
+
     - name: "Run - Script - \"{{ scripttorun }}\""
       shell: |
              #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ scripttorun }}
