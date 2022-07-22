@@ -2,6 +2,25 @@
     - set_fact:
           scripttorun: db2_backup_report.sh
       tags: always
+
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+      run_once: true
+
+    - name: Create Local logs Directory
+      shell: |
+              LOGSDIR="{{ reportsdir }}"
+              if [ ! -d ${LOGSDIR} ]; then mkdir -m 777 -p ${LOGSDIR}; fi
+              if [ $(ls -A ${LOGSDIR}) ]; then
+                mkdir -m 777 -p ${LOGSDIR}/old
+                mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
+              fi
+      args:
+        executable: /bin/bash
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      delegate_to: "{{ reportsserver }}"
+      run_once: true
       
     - name: Copy - Script to target node
       template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
@@ -11,6 +30,8 @@
       shell: |
              #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ scripttorun }}
              {{ logsdir }}/{{ scripttorun }}
+      args:
+        executable: /bin/bash
       register: cmdout
       failed_when: cmdout.rc > 1
       become: True
@@ -18,16 +39,19 @@
       loop: "{{ db2ilist.stdout_lines }}"
       tags: run
 
-    - name: Fetch report files from all servers to reporting server
-      synchronize:
-        mode: pull
-        src: "{{ logsdir }}/daily_report.final"
-        dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final"
-        verify_host: yes
-      #loop: "{{ filestofetch }}"
-      become: false
+    - name: Fetch - Report
+      synchronize: src="{{ logsdir }}/daily_report.final" dest="{{ logsdir }}/daily_report.final" mode=pull
       delegate_to: "{{ reportsserver }}"
-      tags: fetchfiles
+
+    #- name: Fetch report files from all servers to reporting server
+    #  synchronize:
+    #    mode: pull
+    #    src: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final"
+    #    dest: "{{ logsdir }}/daily_report.final"
+    #  #loop: "{{ filestofetch }}"
+    #  #become: false
+    #  delegate_to: "{{ reportsserver }}"
+    #  tags: fetchfiles
 
     - command: date +'%Y%m%d%H%M%S'
       register: timestamp 

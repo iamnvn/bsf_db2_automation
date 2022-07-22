@@ -3,6 +3,10 @@
           scripttorun: db2_backup_purescale.sh
       tags: always
 
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+      run_once: true
+
     - name: Copy - Script to target node
       template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
       tags: copy
@@ -11,6 +15,8 @@
       shell: |
              {{ logsdir }}/{{ scripttorun }}
              #cat {{ logsdir }}/daily_report.final
+      args:
+        executable: /bin/bash
       register: cmdout
       failed_when: cmdout.rc > 1
       become: True
@@ -26,12 +32,11 @@
               LOGSDIR="{{ logsdir }}"
               TMST="{{ timestamp.stdout }}"
               HNAME=$(hostname -s)
-              DB2INST=$(whoami)
               MAILTO="{{ mailto }}"
               FINALRPT=${LOGSDIR}/final_report_${TMST}.final
-              echo "======================================================================" >> ${FINALRPT}
-              echo "         ${HNAME} - Daily Report Generated on - $(date)               " >> ${FINALRPT}
-              echo "======================================================================" >> ${FINALRPT}
+              echo "========================================================================" > ${FINALRPT}
+              echo "=            ${HNAME} - Daily Report Generated on - $(date)            =" >> ${FINALRPT}
+              echo "========================================================================" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
               echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
               echo "---------------------------------------------------------------" >> ${FINALRPT}
@@ -41,6 +46,8 @@
 
               echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
               echo "---------------------------------------------------------------" >> ${FINALRPT}
+              echo "INST_HOSTNAME_DBNAME                     BACKUP_TYPE         START_TIME     END_TIME       STATUS  ERR_CODE    BKP_EXEC_TIME_MIN" >> ${FINALRPT}
+              echo "----------------------------------------------------------------------------- ----------- --------------------------------------" >> ${FINALRPT}
               cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
               echo "-- END" >> ${FINALRPT}
               echo "" >> ${FINALRPT}

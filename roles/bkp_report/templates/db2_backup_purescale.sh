@@ -101,7 +101,7 @@ function cleanup2 {
 }
 
 function latest_bkp_info_sql {
-            db2 -x "SELECT CURRENT SERVER AS DBNAME,
+            db2 -x "SELECT '$(whoami)_$(hostname -s)_'||CURRENT SERVER AS DBNAME,
                 CASE(OPERATIONTYPE)
                     WHEN 'D' THEN 'DELTA_OFFLINE'
                     WHEN 'E' THEN 'DELTA_ONLINE'
@@ -186,7 +186,8 @@ function validate_bkp_report {
 
 function pre_finalreport {
     cat ${INPROGRESRPT} >> ${FINALRPT}
-    cat ${PURESCALERPT} | grep FULL >> ${FINALRPT}
+    #cat ${PURESCALERPT} | grep FULL >> ${FINALRPT}
+    cat ${PURESCALERPT} >> ${FINALRPT}
     cat ${STANDBYRPT} >> ${FINALRPT}
     cat ${ERRORSRPT} >> ${FINALRPT}
     cat ${IGNORERPT} >> ${FINALRPT}
@@ -196,7 +197,7 @@ function pre_finalreport {
 function display2 {
             FINALRPT=/tmp/final
             echo "======================================================================" >> ${FINALRPT}
-            echo "         ${HNAME}_${DB2INST} - Daily Report Generated on - $(date)    " >> ${FINALRPT}
+              echo "         Daily Report Generated on - $(date)                      " >> ${FINALRPT}
             echo "======================================================================" >> ${FINALRPT}
             echo "" >> ${FINALRPT}
             echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
@@ -207,7 +208,8 @@ function display2 {
 
             echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
             echo "---------------------------------------------------------------" >> ${FINALRPT}
-            cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
+            #cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
+            cat ${LOGSDIR}/daily_report_*.final >> ${FINALRPT}
             echo "-- END" >> ${FINALRPT}
             echo "" >> ${FINALRPT}
 
