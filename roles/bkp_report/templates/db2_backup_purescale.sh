@@ -85,7 +85,7 @@ function log_roll {
 
 function cleanup {
     log_roll ${LOGSDIR}/temp/${DB2INST}_listutl.txt
-    log_roll ${FINALRPT}
+    #log_roll ${FINALRPT}
     log_roll ${ERRORSRPT}
     log_roll ${INPROGRESRPT}
     log_roll ${STANDBYRPT}
