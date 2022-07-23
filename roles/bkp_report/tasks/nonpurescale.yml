@@ -10,8 +10,8 @@
     - name: Create Local logs Directory
       shell: |
               LOGSDIR="{{ reportsdir }}"
-              if [ ! -d ${LOGSDIR} ]; then mkdir -m 777 -p ${LOGSDIR}; fi
-              if [ $(ls -A ${LOGSDIR}) ]; then
+              if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
+              if [[ $(ls -A ${LOGSDIR}) ]]; then
                 mkdir -m 777 -p ${LOGSDIR}/old
                 mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
               fi
@@ -26,14 +26,10 @@
       template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
       tags: copy
 
-    - shell: if [[ -f "{{ logsdir }}/daily_report.final" ]]; then mv -f "{{ logsdir }}/daily_report.final" "{{ logsdir }}/old_daily_report.final"; fi
-
     - name: "Run - Script - \"{{ scripttorun }}\""
       shell: |
              #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ scripttorun }}
              {{ logsdir }}/{{ scripttorun }}
-      args:
-        executable: /bin/bash
       register: cmdout
       failed_when: cmdout.rc > 1
       become: True
@@ -41,7 +37,7 @@
       loop: "{{ db2ilist.stdout_lines }}"
       tags: run
 
-    - name: Fetch - Report
+    - name: Fetch report files from all servers to reporting server
       synchronize: 
         src: "{{ logsdir }}/daily_report.final" 
         dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" 
@@ -49,22 +45,12 @@
         recursive: yes
       delegate_to: "{{ reportsserver }}"
 
-    #- name: Fetch report files from all servers to reporting server
-    #  synchronize:
-    #    mode: pull
-    #    src: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final"
-    #    dest: "{{ logsdir }}/daily_report.final"
-    #  #loop: "{{ filestofetch }}"
-    #  #become: false
-    #  delegate_to: "{{ reportsserver }}"
-    #  tags: fetchfiles
-
     - command: date +'%Y%m%d%H%M%S'
       register: timestamp 
     
     - set_fact:
         curtmstmp: "{{ timestamp.stdout }}"
-        finalreport: "{{ reportsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+        finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
 
     - name: Consolidate single report to mail
       shell: |
@@ -102,7 +88,7 @@
 
               echo "-- BEGIN - Error, Unable to connect or Instance not running (Take Action)" >> ${FINALRPT}
               echo "-------------------------------------------------------------------------" >> ${FINALRPT}
-              cat ${LOGSDIR}/daily_report_*.final | grep "ERROR:" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
               echo "-- END" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
 

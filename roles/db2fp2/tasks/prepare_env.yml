@@ -4,7 +4,7 @@
       become: true
       become_user: "{{ item }}"
       loop: "{{ db2ilist.stdout_lines }}"
-      tags: standbyfp,standalonefp,primaryfp 
+      tags: standbyfp,standalonefp,primaryfp
 
     - name: Get - Current Server Role
       shell: |

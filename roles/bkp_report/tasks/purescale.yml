@@ -15,8 +15,6 @@
       shell: |
              {{ logsdir }}/{{ scripttorun }}
              #cat {{ logsdir }}/daily_report.final
-      args:
-        executable: /bin/bash
       register: cmdout
       failed_when: cmdout.rc > 1
       become: True

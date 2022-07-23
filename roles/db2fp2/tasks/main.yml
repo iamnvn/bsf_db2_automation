@@ -105,6 +105,19 @@
       tags: installonly
 ### End - Install Only ##
 
+### Start - Force Update Only ##
+    - block:
+        - debug: msg="Start - Force Update Only"
+          run_once: true
+
+        - import_tasks: "db2fp_std_flow.yml"
+
+        - debug: msg="End - Force Update Only"
+          run_once: true
+      when: installupdate == "force_update"
+      tags: updateonly
+### End - Force Update Only ##
+
 ### Start - Checking Roles and Prepare Servers for FP###
     - block:
         - debug: msg="End - Checking Roles and Prepare Servers for FP"
@@ -138,7 +151,7 @@
 
         - debug: msg="End - Checking Roles and Prepare Servers for FP"
           run_once: true
-      when: installupdate != "install" 
+      when: installupdate != "install" or installupdate != "force_update"
       tags: prepenv  
 ### End - Checking Roles and Prepare Servers for FP###
 
@@ -151,7 +164,7 @@
             - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
               run_once: true
           when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
-      when: installupdate != "install"
+      when: installupdate != "install" or installupdate != "force_update"
       tags: standalonefp
 
 ### Start - DB2 Fixpack upgrade Started for Principal Standby Servers###
@@ -168,7 +181,7 @@
               file: path='/tmp/standby.complete' state='touch' mode='0777'
               delegate_to: "{{ DBSTDBYHOST }}"
           when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
-      when: installupdate != "install"    
+      when: installupdate != "install" or installupdate != "force_update"  
       tags: standbyfp
 ### End - DB2 Fixpack upgrade Started for Principal Standby Servers###
 
@@ -199,7 +212,7 @@
         - import_tasks: tsamp_upgrade.yml
           when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
           tags: tsmpupgrade
-      when: installupdate != "install"
+      when: installupdate != "install" or installupdate != "force_update"
       tags: primaryfp
 ### End - DB2 Fixpack upgrade Started for Primary Servers###
 
