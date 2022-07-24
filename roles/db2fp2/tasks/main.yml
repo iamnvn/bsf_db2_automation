@@ -120,11 +120,12 @@
 
 ### Start - Checking Roles and Prepare Servers for FP###
     - block:
-        - debug: msg="End - Checking Roles and Prepare Servers for FP"
+        - debug: msg="Start - Checking Roles and Prepare Servers for FP"
           run_once: true
 
         - stat: path='/tmp/prepare_env.complete'
           register: prepare_envcomplete
+
         - name: Prepare - Target Environmet
           import_tasks: "prepare_env.yml"
           when: not prepare_envcomplete.stat.exists
@@ -151,7 +152,8 @@
 
         - debug: msg="End - Checking Roles and Prepare Servers for FP"
           run_once: true
-      when: installupdate != "install" or installupdate != "force_update"
+      when: (installupdate != "install") or 
+            (installupdate != "force_update")
       tags: prepenv  
 ### End - Checking Roles and Prepare Servers for FP###
 
@@ -164,7 +166,8 @@
             - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
               run_once: true
           when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
-      when: installupdate != "install" or installupdate != "force_update"
+      when: (installupdate != "install") or 
+            (installupdate != "force_update")
       tags: standalonefp
 
 ### Start - DB2 Fixpack upgrade Started for Principal Standby Servers###
@@ -181,7 +184,8 @@
               file: path='/tmp/standby.complete' state='touch' mode='0777'
               delegate_to: "{{ DBSTDBYHOST }}"
           when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
-      when: installupdate != "install" or installupdate != "force_update"  
+      when: (installupdate != "install") or 
+            (installupdate != "force_update")  
       tags: standbyfp
 ### End - DB2 Fixpack upgrade Started for Principal Standby Servers###
 
@@ -212,7 +216,8 @@
         - import_tasks: tsamp_upgrade.yml
           when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
           tags: tsmpupgrade
-      when: installupdate != "install" or installupdate != "force_update"
+      when: (installupdate != "install") or 
+            (installupdate != "force_update")
       tags: primaryfp
 ### End - DB2 Fixpack upgrade Started for Primary Servers###
 

@@ -5,6 +5,6 @@ dbname: all
 reportdays: 10
 mailto: nvnckmr@gmail.com
 tgtenv: purescale
-reportsserver: ftwlxtstt003.iss.bnr.com
-#reportsserver: ftwaxdsep002
+#reportsserver: ftwlxtstt003.iss.bnr.com
+reportsserver: 192.168.1.19
 reportsdir: /tmp/bkp_reports
