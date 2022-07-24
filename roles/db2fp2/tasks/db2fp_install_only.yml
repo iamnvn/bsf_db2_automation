@@ -1,11 +1,17 @@
 ---
+  - debug: msg="Start - Prebackups"
+    run_once: true 
   - stat: path='/tmp/prepatch.complete'
     register: prepatchcomplete
   - import_tasks: prepatch.yml
     when: not prepatchcomplete.stat.exists
   - file: path='/tmp/prepatch.complete' state='touch' mode='0777'
     tags: prepatch
+  - debug: msg="End - Prebackups"
+    run_once: true
 
+  - debug: msg="Start - InstallFixpack"
+    run_once: true
   - stat: path='/tmp/installfp.complete'
     register: installfpcomplete
   - import_tasks: installfp.yml
@@ -14,3 +20,5 @@
       - not installfpcomplete.stat.exists
   - file: path='/tmp/installfp.complete' state='touch' mode='0777'
     tags: install
+  - debug: msg="End - InstallFixpack"
+    run_once: true
