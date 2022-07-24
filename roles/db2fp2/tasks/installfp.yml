@@ -2,9 +2,9 @@
   - name: "Installing \"DB2 {{ tgtversion }}\" Fixpack on \"{{ db2vpath }}\""
     shell: |
           . /tmp/include_db2
-          SCRIPTNAME=InstallFixpack
+          SCRIPTNAME="iUpdate_{{ item }}"
           LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
-          log_roll ${LOGFILE}
+          log_roll ${LOGFILE} 
           DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
           if [[ ${DOMAIN} -gt 0 ]]; then
             sampolicy -s 
@@ -18,7 +18,7 @@
               log "ERROR: Not able to stop domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/stoprpdomain.log
               exit 23
             else
-              log "Domain - ${DOMAINNAME} Stopped Successfully""
+              log "Domain - ${DOMAINNAME} Stopped Successfully"
             fi
           fi
           ######## DB2 Installation #############
