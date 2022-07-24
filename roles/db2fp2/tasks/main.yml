@@ -152,8 +152,7 @@
 
         - debug: msg="End - Checking Roles and Prepare Servers for FP"
           run_once: true
-      when: (installupdate != "install") and 
-            (installupdate != "force_update")
+      when: installupdate == "update" or installupdate == "install_update"
       tags: prepenv  
 ### End - Checking Roles and Prepare Servers for FP###
 
@@ -166,8 +165,7 @@
             - debug: msg="End - DB2 Fixpack upgrade Started for StandAlone/AxStandby Servers"
               run_once: true
           when: DBROLE == "STANDARD" or HADRSTATE == "REMOTE_CATCHUP"
-      when: (installupdate != "install") and 
-            (installupdate != "force_update")
+      when: installupdate == "update" or installupdate == "install_update"
       tags: standalonefp
 
 ### Start - DB2 Fixpack upgrade Started for Principal Standby Servers###
@@ -184,8 +182,7 @@
               file: path='/tmp/standby.complete' state='touch' mode='0777'
               delegate_to: "{{ DBSTDBYHOST }}"
           when: DBROLE == "STANDBY" and HADRSTATE == "PEER"
-      when: (installupdate != "install") and 
-            (installupdate != "force_update")  
+      when: installupdate == "update" or installupdate == "install_update"  
       tags: standbyfp
 ### End - DB2 Fixpack upgrade Started for Principal Standby Servers###
 
@@ -216,8 +213,7 @@
         - import_tasks: tsamp_upgrade.yml
           when: DBROLE == "PRIMARY" or DBROLE == "STANDBY"
           tags: tsmpupgrade
-      when: (installupdate != "install") and 
-            (installupdate != "force_update")
+      when: installupdate == "update" or installupdate == "install_update"
       tags: primaryfp
 ### End - DB2 Fixpack upgrade Started for Primary Servers###
 
