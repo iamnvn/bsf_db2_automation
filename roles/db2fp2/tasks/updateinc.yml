@@ -1,7 +1,7 @@
 ---
     - name: Running - iUpdate
       shell: |
-              . "/tmp/include_db2"
+              . /tmp/include_db2
               SCRIPTNAME="iUpdate_{{ item }}"
               LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
               log_roll ${LOGFILE} 

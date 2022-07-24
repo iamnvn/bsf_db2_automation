@@ -1,7 +1,7 @@
 ---
   - name: "Installing \"DB2 {{ tgtversion }}\" Fixpack on \"{{ db2vpath }}\""
     shell: |
-          . "/tmp/include_db2"
+          . /tmp/include_db2
           SCRIPTNAME=InstallFixpack
           LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
           log_roll ${LOGFILE}
