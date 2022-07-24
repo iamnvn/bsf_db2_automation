@@ -111,6 +111,6 @@ log "START - ${SCRIPTNAME} execution started for Instance - ${DB2INST} at $(date
     chmod -f 777 ${BACKUPSDIR}/vip_validation_final.txt
 
   log "Running DB2UPDV(Upgrade db) and Binds on each Database"
-  db2updv_binds
+  #db2updv_binds
 
 log "END - ${SCRIPTNAME} execution ended for Instance - ${DB2INST} at $(date)"
