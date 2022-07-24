@@ -4,7 +4,7 @@
           . "/tmp/include_db2"
           SCRIPTNAME=InstallFixpack
           LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
-          log_roll ${LOGFILE}        
+          log_roll ${LOGFILE}
           DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
           if [[ ${DOMAIN} -gt 0 ]]; then
             sampolicy -s 
