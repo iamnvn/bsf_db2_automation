@@ -439,7 +439,7 @@ db2_cmd="select substr(OBJECTSCHEMA,1,10) SCHEMA,substr(OBJECTNAME,1,30) NAME, C
 if [[ -s ${rpt_tmp} ]] ; then
    #echo "Found inoperable objects, fixing them by running CALL SYSPROC.ADMIN_REVALIDATE_DB_OBJECTS(NULL, NULL, NULL) " | tee -a ${rpt_out}
    cat ${rpt_tmp} | tee -a ${rpt_out}
-   db2 "CALL SYSPROC.ADMIN_REVALIDATE_DB_OBJECTS(NULL, NULL, NULL)"  > /dev/null  #>> ${rpt_out}   
+   #db2 "CALL SYSPROC.ADMIN_REVALIDATE_DB_OBJECTS(NULL, NULL, NULL)"  > /dev/null  #>> ${rpt_out}   
    db2_cmd="select substr(OBJECTSCHEMA,1,10) SCHEMA,substr(OBJECTNAME,1,30) NAME, CASE OBJECTTYPE when 'B' then 'Trigger' when 'F' then 'Routine' when 'R' then 'User-Def' when 'V' then 'View' when 'v' then 'Global-Var' when 'y' then 'Row-Perm' when '2' then 'Col-Mask' when '3' then 'Usage-List' end TYPE, SQLSTATE STATE ,INVALIDATE_TIME ERR_TIME from syscat.invalidobjects" 
 	Run_Cmd
 	if [[ ${sqlcode} -lt 0 ]]; then
@@ -448,9 +448,9 @@ if [[ -s ${rpt_tmp} ]] ; then
 	fi 
 	
 	if [[ -s ${rpt_tmp} ]] ; then
-	#echo "Inoperable objects were not fixed , Please check them manually" | tee -a ${rpt_out}
+	echo "Inoperable objects were not fixed , Run - CALL SYSPROC.ADMIN_REVALIDATE_DB_OBJECTS(NULL, NULL, NULL) manually" | tee -a ${rpt_out}
     #echo " Found inoperable views" 
-		cat ${rpt_tmp} > ${bad_obj}  
+		#cat ${rpt_tmp} > ${bad_obj}  
     #else 
 	#echo "Inoperable objects were fixed" | tee -a ${rpt_out}
 	fi 	
