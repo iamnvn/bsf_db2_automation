@@ -1,13 +1,25 @@
 ---
     - name: Running - iUpdate
       shell: |
+              . "/tmp/include_db2"
+              SCRIPTNAME="iUpdate_{{ item }}"
+              LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
+              log_roll ${LOGFILE} 
               if [[ ! -f "{{ db2vpath }}/instance/db2iupdt" ]]; then
-                echo "{{ db2vpath }}/instance/db2iupdt File not exist please check install"
+                log "{{ db2vpath }}/instance/db2iupdt File not exist please check install"
                 exit 23
               else
                 export LD_LIBRARY_PATH=
                 touch {{ logsdir }}/{{ item }}_db2iupdate.log; chmod -f 777 {{ logsdir }}/{{ item }}_db2iupdate.log
+                log "Running - {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1"
                 {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1
+                RCD=$?
+                if [[ ${RCD} -ne 0 ]]; then
+                  log "Instance - {{ item }} - Updated Successfully"
+                else
+                  log "Instance - {{ item }} - Updated Failed with ${RCD}, Please check log"
+                  exit 23
+                fi
                 chmod -f 777 {{ logsdir }}/{{ item }}_db2iupdate.log
               fi
       args:

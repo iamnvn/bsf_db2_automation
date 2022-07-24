@@ -1,29 +1,46 @@
 ---
   - name: "Installing \"DB2 {{ tgtversion }}\" Fixpack on \"{{ db2vpath }}\""
     shell: |
+          . "/tmp/include_db2"
+          SCRIPTNAME=InstallFixpack
+          LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
+          log_roll ${LOGFILE}        
           DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
           if [[ ${DOMAIN} -gt 0 ]]; then
             sampolicy -s 
             export CT_MANAGEMENT_SCOPE=2
             chrsrc -c IBM.PeerNode CritRsrcProtMethod=5
             DOMAINNAME=$(/usr/bin/lsrpdomain -l | grep -i Name | cut -d "=" -f2 | awk '{print $1}')
+            log "Stopping domain - ${DOMAINNAME}"
             /usr/bin/stoprpdomain -f ${DOMAINNAME} > {{ logsdir }}/stoprpdomain.log
             RC=$?
             if [[ ${RC} -ne 0 ]];then
-              echo "ERROR: Not able to stop domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/stoprpdomain.log
+              log "ERROR: Not able to stop domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/stoprpdomain.log
               exit 23
+            else
+              log "Domain - ${DOMAINNAME} Stopped Successfully""
             fi
           fi
           ######## DB2 Installation #############
           DB2BASEPATH=$(cat {{ bkpsdir }}/*/db2level_bef_*.out | grep 'installed'  | awk '{print $5'} | sed "s/..$//g" | sed "s/^.//g" | head -1)
           DB2VPATH="{{ db2vpath }}"
           if [[ -d "${DB2VPATH}" && "${DB2BASEPATH}" != "${DB2VPATH}" ]]; then rm -rf ${DB2VPATH}; fi
+          log "{{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
+          chmod -f 777 {{ logsdir }}/installfp_db2_{{ pversion }}.log"
           {{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
+          RCD=$?
+          if [[ ${RCD} -ne 0 ]]; then
+            log "Fixpack Installation Completed Successfully"
+          else
+            log "Fixpack Installation Failed with RC - ${RCD}, Please check log"
+            exit 24
+          fi
           chmod -f 777 {{ logsdir }}/installfp_db2_{{ pversion }}.log
           chmod -f 777 {{ logsdir }}/installfp_{{ pversion }}_STDERR.log
           ######## DB2 Installation #############
 
           if [[ ${DOMAIN} -gt 0 ]]; then
+            log "Starting Domain - ${DOMAINNAME}"
             chrsrc -c IBM.PeerNode CritRsrcProtMethod=3
             /usr/bin/startrpdomain ${DOMAINNAME} > {{ logsdir }}/startrpdomain.log
             RC=$?
@@ -31,6 +48,8 @@
             if [[ ${RC} -ne 0 ]];then
               echo "ERROR: Not able to start domain - ${DOMAINNAME} - Please check" | tee -a {{ logsdir }}/startrpdomain.log
               exit 24
+            else
+              log "Domain - ${DOMAINNAME} Started Successfully"
             fi
           fi
     args:
