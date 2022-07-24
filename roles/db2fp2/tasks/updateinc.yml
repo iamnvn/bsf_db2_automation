@@ -14,7 +14,7 @@
                 log "Running - {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1"
                 {{ db2vpath }}/instance/db2iupdt -u db2udf {{ item }} > {{ logsdir }}/{{ item }}_db2iupdate.log 2>&1
                 RCD=$?
-                if [[ ${RCD} -ne 0 ]]; then
+                if [[ ${RCD} -eq 0 ]]; then
                   log "Instance - {{ item }} - Updated Successfully"
                 else
                   log "Instance - {{ item }} - Updated Failed with ${RCD}, Please check log"

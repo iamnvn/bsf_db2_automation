@@ -25,11 +25,11 @@
           DB2BASEPATH=$(cat {{ bkpsdir }}/*/db2level_bef_*.out | grep 'installed'  | awk '{print $5'} | sed "s/..$//g" | sed "s/^.//g" | head -1)
           DB2VPATH="{{ db2vpath }}"
           if [[ -d "${DB2VPATH}" && "${DB2BASEPATH}" != "${DB2VPATH}" ]]; then rm -rf ${DB2VPATH}; fi
-          log "{{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
+          log "Running - {{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
           chmod -f 777 {{ logsdir }}/installfp_db2_{{ pversion }}.log"
           {{ binariesdir }}/{{ swtype }}/installFixPack -f install -b ${DB2BASEPATH} -p {{ db2vpath }} -l {{ logsdir }}/installfp_db2_{{ pversion }}.log -n -y >> {{ logsdir }}/installfp_{{ pversion }}_STDERR.log 2>&1
           RCD=$?
-          if [[ ${RCD} -ne 0 ]]; then
+          if [[ ${RCD} -eq 0 ]]; then
             log "Fixpack Installation Completed Successfully"
           else
             log "Fixpack Installation Failed with RC - ${RCD}, Please check log"
