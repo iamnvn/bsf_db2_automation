@@ -1,0 +1,73 @@
+---
+  - debug: msg="Start - Prebackups"
+    run_once: true
+  - stat: path='/tmp/prepatch.complete'
+    register: prepatchcomplete
+  - import_tasks: prepatch.yml
+    when: 
+      - not prepatchcomplete.stat.exists
+  - file: path='/tmp/prepatch.complete' state='touch' mode='0777'
+    tags: prepatch
+  - debug: msg="End - Prebackups"
+    run_once: true
+
+  - debug: msg="Start - StopDB2"
+    run_once: true
+  - stat: path='/tmp/stopdb2.complete'
+    register: stopdb2complete
+  - import_tasks: stopdb2.yml
+    when: 
+      - not stopdb2complete.stat.exists
+  - file: path='/tmp/stopdb2.complete' state='touch' mode='0777'
+    tags: stopdb2
+  - debug: msg="End - StopDB2"
+    run_once: true
+
+  - debug: msg="Start - InstallFixpack"
+    run_once: true
+  - stat: path='/tmp/installfp.complete'
+    register: installfpcomplete
+  - import_tasks: installfp.yml
+    when: 
+      - installupdate == "install_update"
+      - not installfpcomplete.stat.exists
+  - file: path='/tmp/installfp.complete' state='touch' mode='0777'
+    tags: install
+  - debug: msg="End - InstallFixpack"
+    run_once: true
+
+  - debug: msg="Start - iUpdate"
+    run_once: true
+  - stat: path='/tmp/updateinc.complete'
+    register: updateinccomplete
+  - import_tasks: updateinc.yml
+    when: 
+      - not updateinccomplete.stat.exists
+  - file: path='/tmp/updateinc.complete' state='touch' mode='0777'
+    tags: update
+  - debug: msg="End - iUpdate"
+    run_once: true
+
+  - debug: msg="Start - StartDB2"
+    run_once: true
+  - stat: path='/tmp/startdb2.complete'
+    register: startdb2complete
+  - import_tasks: startdb2.yml
+    when: 
+      - not startdb2complete.stat.exists
+  - file: path='/tmp/startdb2.complete' state='touch' mode='0777'
+    tags: startdb2
+  - debug: msg="End - StartDB2"
+    run_once: true
+
+  - debug: msg="Start - PostBackups"
+    run_once: true
+  - stat: path='/tmp/postpatch.complete'
+    register: postpatchcomplete
+  - import_tasks: postpatch.yml
+    when: 
+      - not postpatchcomplete.stat.exists
+  - file: path='/tmp/postpatch.complete' state='touch' mode='0777'
+    tags: postpatch
+  - debug: msg="End - PostBackups"
+    run_once: true
