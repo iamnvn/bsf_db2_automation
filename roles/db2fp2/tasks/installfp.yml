@@ -2,7 +2,7 @@
   - name: "Installing \"DB2 {{ tgtversion }}\" Fixpack on \"{{ db2vpath }}\""
     shell: |
           . /tmp/include_db2
-          SCRIPTNAME="iUpdate_{{ item }}"
+          SCRIPTNAME=installFixpack
           LOGFILE=${LOGDIR}/${SCRIPTNAME}.log
           log_roll ${LOGFILE} 
           DOMAIN=$(/usr/bin/lsrpdomain | wc -l)
