@@ -101,7 +101,9 @@
       become: true
       become_user: "{{ item }}"
       loop: "{{ db2ilist.stdout_lines }}"
-      when: (dbaction == "stop") and (dbaction == "restart")
+      when: 
+        - dbaction == "stop"
+        - dbaction == "restart"
       tags: checkroles
 
     - name: Get - HADR Roles
@@ -110,7 +112,7 @@
                 PSTANDBY=$(cat /tmp/db2-roles.txt | grep -i primary | head -1 | awk '{print $5}')
                 ROLE=$(cat /tmp/db2-roles.txt |  grep -i primary | head -1 | awk '{print $2}')
                 STANDBYHOST=$(nslookup ${PSTANDBY} | grep -i name | cut -d ":" -f2 | awk '{print $1}')
-                #STANDBYHOST=${PSTANDBY}
+                STANDBYHOST=${PSTANDBY}
 
                 echo "${ROLE} ${STANDBYHOST}" > /tmp/cur_db_role.txt
                 #echo "PRIMARY ftwlxtstt004.iss.bnr.com" > /tmp/cur_db_role.txt
@@ -123,25 +125,32 @@
         executable: /bin/bash
       register: hadrout
       tags: validateha
-      when: (dbaction == "stop") and (dbaction == "restart")
-
+      when:
+        - dbaction == "stop"
+        - dbaction == "restart"
     #- debug: msg="{{ hadrout.stdout }}"
     
     - set_fact:
        hadrop: "{{ hadrout.stdout.split(' ') }}"
       tags: validateha
-      when: (dbaction == "stop") and (dbaction == "restart")
+      when: 
+        - dbaction == "stop"
+        - dbaction == "restart"
 
     - set_fact:
         DBROLE: "{{ hadrop.0 }}"
         DBSTDBYHOST: "{{ hadrop.1 }}"
       tags: validateha
-      when: (dbaction == "stop") and (dbaction == "restart")
+      when:
+        - dbaction == "stop"
+        - dbaction == "restart"
 
     - name: Info - Server Status
       debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }} - DBRole={{ DBROLE }} RemoteHost={{ DBSTDBYHOST }}"
       tags: info
-      when: (dbaction == "stop") and (dbaction == "restart")
+      when:
+        - dbaction == "stop"
+        - dbaction == "restart"
 
     - name: Info - Server Status
       debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }}"
