@@ -101,7 +101,7 @@
       become: true
       become_user: "{{ item }}"
       loop: "{{ db2ilist.stdout_lines }}"
-      when: dbaction == "stop"
+      when: (dbaction == "stop") and (dbaction == "restart")
       tags: checkroles
 
     - name: Get - HADR Roles
@@ -123,25 +123,25 @@
         executable: /bin/bash
       register: hadrout
       tags: validateha
-      when: dbaction == "stop"
+      when: (dbaction == "stop") and (dbaction == "restart")
 
     #- debug: msg="{{ hadrout.stdout }}"
     
     - set_fact:
        hadrop: "{{ hadrout.stdout.split(' ') }}"
       tags: validateha
-      when: dbaction == "stop"
+      when: (dbaction == "stop") and (dbaction == "restart")
 
     - set_fact:
         DBROLE: "{{ hadrop.0 }}"
         DBSTDBYHOST: "{{ hadrop.1 }}"
       tags: validateha
-      when: dbaction == "stop"
+      when: (dbaction == "stop") and (dbaction == "restart")
 
     - name: Info - Server Status
       debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }} - DBRole={{ DBROLE }} RemoteHost={{ DBSTDBYHOST }}"
       tags: info
-      when: dbaction == "stop"
+      when: (dbaction == "stop") and (dbaction == "restart")
 
     - name: Info - Server Status
       debug: msg="Current Server={{ inventory_hostname }} - Dbaction={{ dbaction }}"
