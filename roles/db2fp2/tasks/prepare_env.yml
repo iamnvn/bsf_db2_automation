@@ -10,9 +10,9 @@
       shell: |
               NOOFDBS=$(grep -c '' /tmp/db2-role.txt)
               if [[ ${NOOFDBS} -eq $(grep -c 'STANDARD' /tmp/db2-role.txt) ]]; then
-                if [[ $(grep -c 'STANDARD' /tmp/db2-role.txt) -ne 0 ]]; then
+                #if [[ $(grep -c 'STANDARD' /tmp/db2-role.txt) -ne 0 ]]; then
                   echo "STANDARD NA NA" > /tmp/cur_db_role.txt
-                fi
+                #fi
 
               elif [[ ${NOOFDBS} -eq $(grep -c 'PRIMARY' /tmp/db2-role.txt) ]]; then
                 if [[ $(grep -c 'PRIMARY' /tmp/db2-role.txt) -ne 0 ]]; then
