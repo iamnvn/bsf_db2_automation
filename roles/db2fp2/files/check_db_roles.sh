@@ -58,11 +58,11 @@ function validate_ha {
     HADRROLES=/tmp/HADR_roles.txt
 
     if [[ $(grep -c ' ' ${HADRROLES}) -eq $(grep -c 'STANDARD' ${HADRROLES}) ]]; then
-      if [[ $(grep -c 'STANDARD' ${HADRROLES}) -ne 0 ]]; then
+      #if [[ $(grep -c 'STANDARD' ${HADRROLES}) -ne 0 ]]; then
         echo "STANDARD" > /tmp/db2-role_${DB2INST}.txt
         echo "NA" > /tmp/db2-standby_${DB2INST}.txt
         #log "${DB2INST} - ${HNAME} - This Server role is $(cat /tmp/db2-role_${DB2INST}.txt)"
-      fi
+      #fi
     else
         log "${DB2INST} - ${HNAME} - HADR Server node"
         if [[ $(egrep -c 'PRIMARY|STANDBY' ${HADRROLES}) -eq $(grep -c 'CONNECTED' ${HADRROLES}) ]]; then
