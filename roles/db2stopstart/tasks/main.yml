@@ -74,7 +74,7 @@
               if [[ "$DB2INST" == "all" ]]; then
                 /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
               else
-                for INST in ${DB2INST}
+                for INST in $(echo ${DB2INST} | sed 's/,/ /g')
                 do
                   echo "${INST}" >> /tmp/db2ilist.lst;
                 done
@@ -162,6 +162,21 @@
           import_tasks: stop_db2.yml
 
       when: dbaction == "stop"
+      tags: stopdb
+
+    - name: Block for db2 restart.
+      block:
+        - import_tasks: failover_db2.yml
+          when: DBROLE == "PRIMARY"
+          tags: failover
+
+        - name: Stop - DB2 Databases and Instance
+          import_tasks: stop_db2.yml
+
+        - name: Start - DB2 Databases and Instance
+          import_tasks: start_db2.yml
+
+      when: dbaction == "restart"
       tags: stopdb
 
     - import_tasks: validate_db2.yml
