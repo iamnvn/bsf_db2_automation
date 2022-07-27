@@ -6,5 +6,5 @@ reportdays: 10
 mailto: nvnckmr@gmail.com
 tgtenv: nonpurescale
 #reportsserver: ftwlxtstt003.iss.bnr.com
-reportsserver: 192.168.1.9
+reportsserver: 192.168.1.8
 reportsdir: /tmp/bkp_reports
