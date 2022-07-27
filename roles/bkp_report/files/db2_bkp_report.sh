@@ -13,7 +13,7 @@ function get_vars {
     DB2INST=$(whoami)
     LOGSDIR=/tmp
 
-    FINALRPT=${LOGSDIR}/daily_report_${DB2INST}_${HNAME}.all
+    INSTFINALRPT=${LOGSDIR}/daily_report_${DB2INST}.final
     ERRORSRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.err
     ACTIONSRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.action
     INPROGRESRPT=${LOGSDIR}/temp/daily_report_${DB2INST}_${HNAME}.inprgrs
@@ -43,6 +43,7 @@ function main {
     run_bkp_report
     validate_bkp_report
     disiplay_report
+    inst_report
     cleanup2
 }
 
@@ -85,7 +86,7 @@ function log_roll {
 
 function cleanup {
     log_roll ${LOGSDIR}/temp/${DB2INST}_listutl.txt
-    log_roll ${FINALRPT}
+    log_roll ${INSTFINALRPT}
     log_roll ${ERRORSRPT}
     log_roll ${ACTIONSRPT}
     log_roll ${INPROGRESRPT}
@@ -350,47 +351,57 @@ function validate_bkp_report {
     done < /tmp/${DB2INST}.db.lst
 }
 
+function inst_report {
+    cat ${INPROGRESRPT} >> ${INSTFINALRPT}
+    cat ${ACTIONSRPT} | grep -i full >> ${INSTFINALRPT}
+    cat ${ACTIONSRPT} | grep -i incremental >> ${INSTFINALRPT}
+    cat ${STANDBYRPT} >> ${INSTFINALRPT}
+    cat ${ERRORSRPT} >> ${INSTFINALRPT}
+    cat ${IGNORERPT} >> ${INSTFINALRPT}
+    #cat ${INSTFINALRPT} 
+}
+
 function disiplay_report {
-    echo "======================================================================" >> ${FINALRPT}
-    echo "         Daily Report Generated on - $(date)                          " >> ${FINALRPT}
-    echo "======================================================================" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
-    echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
-    echo "---------------------------------------------------------------" >> ${FINALRPT}
-    cat ${INPROGRESRPT} >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "======================================================================" >> ${INSTFINALRPT}
+    echo "         Daily Report Generated on - $(date)                          " >> ${INSTFINALRPT}
+    echo "======================================================================" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
+    echo "-- BEGIN - Backups In Progress" >> ${INSTFINALRPT}
+    echo "---------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${INPROGRESRPT} >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    echo "-- BEGIN - No Full Backups or Failed Full Backups (Take Action)" >> ${FINALRPT}
-    echo "---------------------------------------------------------------" >> ${FINALRPT}
-    cat ${ACTIONSRPT} | grep -i full >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "-- BEGIN - No Full Backups or Failed Full Backups (Take Action)" >> ${INSTFINALRPT}
+    echo "---------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${ACTIONSRPT} | grep -i full >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    echo "-- BEGIN - No Incremental Backups or Failed Incremental Backups --Take Action" >> ${FINALRPT}
-    echo "---------------------------------------------------------------" >> ${FINALRPT}
-    cat ${ACTIONSRPT} | grep -i incremental >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "-- BEGIN - No Incremental Backups or Failed Incremental Backups --Take Action" >> ${INSTFINALRPT}
+    echo "---------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${ACTIONSRPT} | grep -i incremental >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    echo "-- BEGIN - Standby Report --No Action neeed" >> ${FINALRPT}
-    echo "---------------------------------------------------------------" >> ${FINALRPT}
-    cat ${STANDBYRPT} >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "-- BEGIN - Standby Report --No Action neeed" >> ${INSTFINALRPT}
+    echo "---------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${STANDBYRPT} >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${FINALRPT}
-    echo "-------------------------------------------------------------------------" >> ${FINALRPT}
-    cat ${ERRORSRPT} >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${INSTFINALRPT}
+    echo "-------------------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${ERRORSRPT} >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
-    echo "---------------------------------------------------------------" >> ${FINALRPT}
-    cat ${IGNORERPT} >> ${FINALRPT}
-    echo "-- END" >> ${FINALRPT}
-    echo "" >> ${FINALRPT}
+    echo "-- BEGIN - Ingnoring Test Databases" >> ${INSTFINALRPT}
+    echo "---------------------------------------------------------------" >> ${INSTFINALRPT}
+    cat ${IGNORERPT} >> ${INSTFINALRPT}
+    echo "-- END" >> ${INSTFINALRPT}
+    echo "" >> ${INSTFINALRPT}
 
-    cat ${FINALRPT} 
+    cat ${INSTFINALRPT} 
 }
 main

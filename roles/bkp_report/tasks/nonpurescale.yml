@@ -45,6 +45,11 @@
         recursive: yes
       delegate_to: "{{ reportsserver }}"
 
+    - name: Fetch report files from all servers to reporting server
+      shell: |
+              scp {{ item }}@{{ inventory_hostname }}:{{ logsdir }}/daily_report_{{ item }}.final {{ reportsdir }}/daily_report_{{ item }}_{{ inventory_hostname }}.final
+      delegate_to: "{{ reportsserver }}"
+
     - command: date +'%Y%m%d%H%M%S'
       register: timestamp 
     
