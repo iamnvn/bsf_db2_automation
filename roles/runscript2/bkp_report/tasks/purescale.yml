@@ -1,0 +1,81 @@
+---
+    - set_fact:
+          scripttorun: db2_backup_purescale.sh
+      tags: always
+
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+      run_once: true
+
+    - name: Copy - Script to target node
+      template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
+      tags: copy
+
+    - name: "Run - Script - \"{{ scripttorun }}\""
+      shell: |
+             {{ logsdir }}/{{ scripttorun }}
+             #cat {{ logsdir }}/daily_report.final
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      become: True
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: run
+
+    - command: date +'%Y%m%d%H%M%S'
+      register: timestamp
+    
+    - name: Prepare Final report for mail
+      shell: |
+              LOGSDIR="{{ logsdir }}"
+              TMST="{{ timestamp.stdout }}"
+              HNAME=$(hostname -s)
+              MAILTO="{{ mailto }}"
+              FINALRPT=${LOGSDIR}/final_report_${TMST}.final
+              echo "========================================================================" > ${FINALRPT}
+              echo "=            ${HNAME} - Daily Report Generated on - $(date)            =" >> ${FINALRPT}
+              echo "========================================================================" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+              echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Purescale latest full backup information" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              echo "INST_HOSTNAME_DBNAME                     BACKUP_TYPE         START_TIME     END_TIME       STATUS  ERR_CODE    BKP_EXEC_TIME_MIN" >> ${FINALRPT}
+              echo "----------------------------------------------------------------------------- ----------- --------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep FULL >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Standby Report --No Action needed" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup Needed" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Error, Unable to connect or Instance not running --Take Action" >> ${FINALRPT}
+              echo "-------------------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to be backed up" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              mail -s "Purescale Backup Report - $(hostname -s) - $(date)" ${MAILTO} < ${FINALRPT}
+              cat ${FINALRPT}
+      args:
+        executable: /bin/bash
+      register: finalout
+      #delegate_to: "{{ reportsserver }}"
+    
+    - name: Final Output
+      debug: msg="{{ finalout.stdout_lines}}"
+      run_once: true
+      tags: finalout

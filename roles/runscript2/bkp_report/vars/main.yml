@@ -1,0 +1,10 @@
+---
+target_server: all
+logsdir: /db/exp/ansible/bkp_reports
+dbname: all
+reportdays: 10
+mailto: nvnckmr@gmail.com
+tgtenv: purescale
+reportsserver: ftwaxdsep002.iss.bnr.com
+#reportsserver: ftwaxdsep002
+reportsdir: /tmp/bkp_reports

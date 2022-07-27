@@ -4,23 +4,22 @@
       tags: always
 
     - name: Remove Special Chars from Scripts before copy
-      local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      local_action: command perl -p -i -e 's/\r//g' {{ scripttorun }}
       become: false
       run_once: true
 
     - name: Create Local logs Directory
-      shell: |
+      local_action: shell cat << EOF
               LOGSDIR="{{ reportsdir }}"
               if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
               if [[ $(ls -A ${LOGSDIR}) ]]; then
                 mkdir -m 777 -p ${LOGSDIR}/old
                 mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
               fi
-      args:
-        executable: /bin/bash
+              EOF
       register: cmdout
       failed_when: cmdout.rc > 1
-      delegate_to: "{{ reportsserver }}"
+      #delegate_to: "{{ reportsserver }}"
       run_once: true
       
     - name: Copy - Script to target node
@@ -47,10 +46,9 @@
     #  delegate_to: "{{ reportsserver }}"
 
     - name: Fetch report files from all servers to reporting server
-      shell: |
-              scp {{ inventory_hostname }}:{{ logsdir }}/daily_report_{{ item }}.final {{ reportsdir }}/daily_report_{{ item }}_{{ inventory_hostname }}.final
+      local_action: shell scp {{ inventory_hostname }}:{{ logsdir }}/daily_report_{{ item }}.final {{ reportsdir }}/daily_report_{{ item }}_{{ inventory_hostname }}.final
       loop: "{{ db2ilist.stdout_lines }}"
-      delegate_to: "{{ reportsserver }}"
+      #delegate_to: "{{ reportsserver }}"
       tags: fetch
 
     - command: date +'%Y%m%d%H%M%S'
@@ -63,7 +61,7 @@
       tags: always
 
     - name: Consolidate single report to mail
-      shell: |
+      local_action: shell cat << EOF
               FINALRPT="{{ finalreport }}"
               LOGSDIR="{{ reportsdir }}"
               MAILTO="{{ mailto }}"
@@ -107,14 +105,13 @@
               cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to" >> ${FINALRPT}
               echo "-- END" >> ${FINALRPT}
               echo "" >> ${FINALRPT}
-              #mail -s "Backup Report" ${MAILTO} < ${FINALRPT}
+              mail -s "DB2 LUW Backup Report - $(date)" ${MAILTO} < ${FINALRPT}
               cat ${FINALRPT}
-      args:
-        executable: /bin/bash
+              EOF
       register: shellout
       become: false
       run_once: true
-      delegate_to: "{{ reportsserver }}"
+      #delegate_to: "{{ reportsserver }}"
       tags: genreport
 
     - name: Final Output

@@ -1,0 +1,113 @@
+---
+    - set_fact:
+          scripttorun: db2_backup_report.sh
+      tags: always
+
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+      run_once: true
+
+    - name: Create Local logs Directory
+      shell: |
+              LOGSDIR="{{ reportsdir }}"
+              if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
+              if [[ $(ls -A ${LOGSDIR}) ]]; then
+                mkdir -m 777 -p ${LOGSDIR}/old
+                mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
+              fi
+      args:
+        executable: /bin/bash
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      delegate_to: "{{ reportsserver }}"
+      run_once: true
+      
+    - name: Copy - Script to target node
+      template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
+      tags: copy
+
+    - name: "Run - Script - \"{{ scripttorun }}\""
+      shell: |
+             #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ scripttorun }}
+             {{ logsdir }}/{{ scripttorun }}
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      become: True
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: run
+
+    - name: Fetch report files from all servers to reporting server
+      synchronize: 
+        src: "{{ logsdir }}/daily_report.final" 
+        dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" 
+        mode: pull
+        recursive: yes
+      delegate_to: "{{ reportsserver }}"
+
+    - command: date +'%Y%m%d%H%M%S'
+      register: timestamp 
+    
+    - set_fact:
+        curtmstmp: "{{ timestamp.stdout }}"
+        finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+
+    - name: Consolidate single report to mail
+      shell: |
+              FINALRPT="{{ finalreport }}"
+              LOGSDIR="{{ reportsdir }}"
+              MAILTO="{{ mailto }}"
+
+              echo "======================================================================" >> ${FINALRPT}
+              echo "         Daily Report Generated on - $(date)                          " >> ${FINALRPT}
+              echo "======================================================================" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+              echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i BackupInProgress >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - No Full Backups or Failed Full Backups (Take Action)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i full | grep -i "NO FULL BKP" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - No Incremental Backups or Failed Incremental Backups (Take Action)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i incremental | grep -i "NO INCREMENTAL BKP" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Standby Report (No Action neeed)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "Standby - No Backup" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Error, Unable to connect or Instance not running (Take Action)" >> ${FINALRPT}
+              echo "-------------------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "ERROR:" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/daily_report_*.final | grep -i "Database does not need to" >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+              #mail -s "Backup Report" ${MAILTO} < ${FINALRPT}
+              cat ${FINALRPT}
+      args:
+        executable: /bin/bash
+      register: shellout
+      become: false
+      run_once: true
+      tags: genreport
+      delegate_to: "{{ reportsserver }}"
+
+    - name: Final Output
+      debug: msg="{{ shellout.stdout_lines}}"
+      run_once: true
+      tags: finalout

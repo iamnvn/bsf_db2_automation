@@ -1,0 +1,38 @@
+---
+    - debug: msg="Play_hosts={{ play_hosts }}"
+      run_once: true
+      tags: always
+
+    #- name: Create Local logs Directory
+    #  shell: |
+    #          LOGSDIR="{{ reportsdir }}"
+    #          if [[ ! -d ${LOGSDIR} ]]; then mkdir -m 777 -p ${LOGSDIR}; fi
+    #          if [[ $(ls -A ${LOGSDIR}) ]]; then
+    #            mkdir -m 777 -p ${LOGSDIR}/old
+    #            mv -f ${LOGSDIR}/daily_report* ${LOGSDIR}/old/
+    #          fi
+    #  register: cmdout
+    #  failed_when: cmdout.rc > 1
+    #  delegate_to: "{{ reportsserver }}"
+    #  run_once: true
+
+    - name: Get db2 instances
+      shell: |
+              /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
+              cat /tmp/db2ilist.lst | grep -v db2cln
+      register: db2ilist
+      tags: always
+
+    - name: "Create - Logs directory - \"{{ logsdir }}\""
+      file: path="{{ logsdir }}" state='directory' mode='0777'
+      tags: always
+
+    - import_tasks: purescale.yml
+      when: tgtenv == "purescale"
+
+    - import_tasks: nonpurescale.yml
+      when: tgtenv != "purescale"
+
+    - name: Remove - Script from target
+      file: path="{{ logsdir }}/{{ scripttorun }}" state=absent
+      tags: remove

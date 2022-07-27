@@ -1,0 +1,101 @@
+---
+    - debug: msg="Play_hosts={{ play_hosts }}"
+      run_once: true
+      tags: always
+
+    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+      become: false
+
+    - name: Get db2 instances
+      shell: |
+              /usr/local/bin/db2ls |  tail -n +4 | awk '{print $1}' |while read inst; do $inst/instance/db2ilist; done > /tmp/db2ilist.lst
+              cat /tmp/db2ilist.lst | grep -v db2cln
+      register: db2ilist
+      tags: always
+
+    - name: Create - Logs directory - {{ logsdir }}
+      file: path="{{ logsdir }}" state=directory mode=0777
+      tags: always
+
+    - name: Copy - Script to target node
+      template: src="{{ scripttorun }}" dest="{{ logsdir }}/{{ scripttorun }}" mode=0755
+      tags: copy
+
+    - name: "Run - Script - \"{{ scripttorun }}\""
+      shell: |
+             #perl -p -i -e 's/\r//g' {{ logsdir }}/{{ scripttorun }}
+             {{ logsdir }}/{{ scripttorun }}
+      register: cmdout
+      failed_when: cmdout.rc > 1
+      become: true
+      become_user: "{{ item }}"
+      loop: "{{ db2ilist.stdout_lines }}"
+      tags: run
+
+    - command: date +'%Y%m%d%H%M%S'
+      register: timestamp 
+    
+    - set_fact:
+        curtmstmp: "{{ timestamp.stdout }}"
+        finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+
+    - name: Consolidate single report to mail
+      shell: |
+              FINALRPT="{{ finalreport }}"
+              LOGSDIR="{{ logsdir }}"
+              MAILTO="{{ mailto }}"
+
+              echo "======================================================================" >> ${FINALRPT}
+              echo "         Daily Report Generated on - $(date)                          " >> ${FINALRPT}
+              echo "======================================================================" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+              echo "-- BEGIN - Backups In Progress" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.inprgrs >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - No Full Backups or Failed Full Backups (Take Action)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.action | grep -i full >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - No Incremental Backups or Failed Incremental Backups (Take Action)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.action | grep -i incremental >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Standby Report (No Action neeed)" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.standby >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Error, Unable to connect or Instance not running (Take Action)" >> ${FINALRPT}
+              echo "-------------------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.err >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+
+              echo "-- BEGIN - Ingnoring Test Databases" >> ${FINALRPT}
+              echo "---------------------------------------------------------------" >> ${FINALRPT}
+              cat ${LOGSDIR}/temp/daily_report_*.ignore >> ${FINALRPT}
+              echo "-- END" >> ${FINALRPT}
+              echo "" >> ${FINALRPT}
+              mail -s "Backup Report" ${MAILTO} < ${FINALRPT}
+              cat ${FINALRPT}
+      register: shellout
+      ignore_errors: true
+      run_once: true
+      tags: genreport
+
+    - name: Final Output
+      debug: msg="{{ shellout.stdout_lines}}"
+      run_once: true
+      tags: finalout
+
+    - name: Remove - Script from target
+      file: path="{{ logsdir }}/{{ scripttorun }}" state=absent
+      tags: remove
