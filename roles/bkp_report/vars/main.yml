@@ -4,7 +4,7 @@ logsdir: /db/exp/ansible/bkp_reports
 dbname: all
 reportdays: 10
 mailto: nvnckmr@gmail.com
-tgtenv: purescale
+tgtenv: nonpurescale
 #reportsserver: ftwlxtstt003.iss.bnr.com
 reportsserver: 192.168.1.9
 reportsdir: /tmp/bkp_reports
