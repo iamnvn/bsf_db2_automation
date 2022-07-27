@@ -43,7 +43,7 @@ function main {
     get_bkp_inprogress
     run_bkp_report
     validate_bkp_report
-    disiplay_report
+    #disiplay_report
     inst_report
     cleanup2
 }
