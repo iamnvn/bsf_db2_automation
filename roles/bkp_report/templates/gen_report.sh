@@ -1,8 +1,4 @@
 #!/bin/bash
-FINALRPT="{{ finalreport }}"
-LOGSDIR="{{ reportsdir }}"
-MAILTO="{{ mailto }}"
-
 echo "======================================================================" >> ${FINALRPT}
 echo "         Daily Report Generated on - $(date)      " >> ${FINALRPT}
 echo "======================================================================" >> ${FINALRPT}
