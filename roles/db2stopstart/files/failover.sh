@@ -149,8 +149,8 @@ function check_vip_after {
     else
       echo "NO VIPs HERE BEFORE and AFTER" >> ${LOGDIR}/${DB2INST}_vip_val.txt
       echo "" >> ${LOGDIR}/${DB2INST}_vip_val.txt
-      echo "db2pd -db ${DBNAME} -" >> ${LOGDIR}/${DB2INST}_vip_val.txt
-      echo "$(db2pd -db ${DBNAME} -)" >> ${LOGDIR}/${DB2INST}_vip_val.txt
+      echo "db2pd -alldbs -" >> ${LOGDIR}/${DB2INST}_vip_val.txt
+      echo "$(db2pd -alldbs -)" >> ${LOGDIR}/${DB2INST}_vip_val.txt
       echo "" >> ${LOGDIR}/${DB2INST}_vip_val.txt
     fi
   
