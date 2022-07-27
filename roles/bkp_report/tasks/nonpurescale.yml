@@ -3,7 +3,8 @@
           scripttorun: db2_backup_report.sh
       tags: always
 
-    - local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
+    - name: Remove Special Chars from Scripts before copy
+      local_action: shell perl -p -i -e 's/\r//g' {{ scripttorun }}
       become: false
       run_once: true
 
@@ -37,13 +38,13 @@
       loop: "{{ db2ilist.stdout_lines }}"
       tags: run
 
-    - name: Fetch report files from all servers to reporting server
-      synchronize: 
-        src: "{{ logsdir }}/daily_report.final" 
-        dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" 
-        mode: pull
-        recursive: yes
-      delegate_to: "{{ reportsserver }}"
+    #- name: Fetch report files from all servers to reporting server
+    #  synchronize: 
+    #    src: "{{ logsdir }}/daily_report.final" 
+    #    dest: "{{ reportsdir }}/daily_report_{{ inventory_hostname }}.final" 
+    #    mode: pull
+    #    recursive: yes
+    #  delegate_to: "{{ reportsserver }}"
 
     - name: Fetch report files from all servers to reporting server
       shell: |
