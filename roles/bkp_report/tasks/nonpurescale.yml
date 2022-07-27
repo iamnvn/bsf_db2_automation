@@ -61,7 +61,7 @@
       tags: always
 
     - name: Consolidate single report to mail
-      local_action: command ./gen_report.sh
+      local_action: command gen_report.sh
       register: shellout
       become: false
       run_once: true
