@@ -59,7 +59,7 @@
     
     - set_fact:
         curtmstmp: "{{ timestamp.stdout }}"
-        finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+        finalreport: "{{ reportsdir }}/finalreport_{{ timestamp.stdout }}.txt"
       tags: always
 
     - name: Consolidate single report to mail
