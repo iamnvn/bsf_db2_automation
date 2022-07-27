@@ -60,6 +60,7 @@
     - set_fact:
         curtmstmp: "{{ timestamp.stdout }}"
         finalreport: "{{ logsdir }}/finalreport_{{ timestamp.stdout }}.txt"
+      tags: always
 
     - name: Consolidate single report to mail
       shell: |
@@ -113,8 +114,8 @@
       register: shellout
       become: false
       run_once: true
-      tags: genreport
       delegate_to: "{{ reportsserver }}"
+      tags: genreport
 
     - name: Final Output
       debug: msg="{{ shellout.stdout_lines}}"
