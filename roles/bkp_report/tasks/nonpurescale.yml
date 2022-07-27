@@ -48,7 +48,7 @@
 
     - name: Fetch report files from all servers to reporting server
       shell: |
-              scp {{ item }}@{{ inventory_hostname }}:{{ logsdir }}/daily_report_{{ item }}.final {{ reportsdir }}/daily_report_{{ item }}_{{ inventory_hostname }}.final
+              scp {{ inventory_hostname }}:{{ logsdir }}/daily_report_{{ item }}.final {{ reportsdir }}/daily_report_{{ item }}_{{ inventory_hostname }}.final
       loop: "{{ db2ilist.stdout_lines }}"
       delegate_to: "{{ reportsserver }}"
       tags: fetch
